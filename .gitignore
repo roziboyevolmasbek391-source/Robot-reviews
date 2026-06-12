@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Puppeteer and temporary sessions
+uzum-session/
+yandex-session/
+scratch/
+
+# Debug files, logs, and screenshots
+*.png
+*.html
+uzum_vendors_api_response.json
+

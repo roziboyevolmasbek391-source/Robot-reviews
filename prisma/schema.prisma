@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Foydalanuvchi (Admin/Operator)
+// ==========================================
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole @default(OPERATOR)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([username])
+  @@index([role])
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
+// ==========================================
+// Filial (Branch)
+// ==========================================
+model Branch {
+  id         String  @id @default(cuid())
+  externalId String?
+  name       String
+  city       String
+  address    String
+  latitude   Float?
+  longitude  Float?
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews     Review[]
+  syncLogs    ReviewSyncLog[]
+  platformIds BranchPlatformId[]
+
+  @@index([city])
+  @@index([isActive])
+  @@index([name])
+}
+
+// ==========================================
+// Filialning platformadagi ID'si
+// ==========================================
+model BranchPlatformId {
+  id         String       @id @default(cuid())
+  branchId   String
+  source     ReviewSource
+  platformId String
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, source])
+  @@unique([source, platformId])
+  @@index([source])
+}
+
+// ==========================================
+// Sharh (Review)
+// ==========================================
+model Review {
+  id               String       @id @default(cuid())
+  branchId         String
+  source           ReviewSource
+  externalReviewId String
+  author           String       @default("Anonim")
+  rating           Int
+  text             String?      @db.Text
+  reviewUrl        String?
+  reviewDate       DateTime
+  isNew            Boolean      @default(true)
+
+  replyText        String?      @db.Text
+  repliedAt        DateTime?
+  repliedBy        String?
+  aiSentiment      String?      // "POSITIVE", "NEUTRAL", "NEGATIVE"
+  aiTopics         String?      // Comma-separated list of topics
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([source, externalReviewId])
+  @@index([branchId])
+  @@index([source])
+  @@index([reviewDate])
+  @@index([rating])
+  @@index([isNew])
+  @@index([createdAt])
+  @@index([source, branchId])
+  @@index([source, branchId, reviewDate])
+}
+
+// ==========================================
+// Sharh Manba'lari
+// ==========================================
+enum ReviewSource {
+  GOOGLE_MAPS
+  YANDEX_MAPS
+  YANDEX_VENDOR
+  DGIS
+  UZUM_VENDOR
+}
+
+// ==========================================
+// Sinxronizatsiya Loglari
+// ==========================================
+model ReviewSyncLog {
+  id            String       @id @default(cuid())
+  source        ReviewSource
+  branchId      String?
+  syncedReviews Int          @default(0)
+  failedReviews Int          @default(0)
+  totalFound    Int          @default(0)
+  duplicates    Int          @default(0)
+  startedAt     DateTime     @default(now())
+  finishedAt    DateTime?
+  status        SyncStatus   @default(RUNNING)
+  error         String?      @db.Text
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@index([source])
+  @@index([status])
+  @@index([startedAt])
+  @@index([branchId])
+}
+
+enum SyncStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+// ==========================================
+// Tizim Sozlamalari (shifrlangan)
+// ==========================================
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  isSecret  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}

@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["recharts"],
+  allowedDevOrigins: ["192.168.74.138", "192.168.74.130"],
 };
 
 export default nextConfig;
+
