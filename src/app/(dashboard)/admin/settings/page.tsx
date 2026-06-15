@@ -373,31 +373,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Category 5: AI Settings */}
-        <Card className="border-slate-800 bg-slate-900/20 text-slate-100">
-          <CardHeader>
-            <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-              🤖 Интеграция с ИИ (Gemini API)
-            </CardTitle>
-            <CardDescription className="text-slate-400 text-[10px]">
-              Настройки для генерации автоответов и анализа отзывов с помощью ИИ.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 grid-cols-1">
-              <div className="space-y-2">
-                <label className="text-slate-300 font-medium">Gemini API Key</label>
-                <Input
-                  type="password"
-                  value={getSetting("GEMINI_API_KEY")?.value || ""}
-                  onChange={(e) => handleValueChange("GEMINI_API_KEY", e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-white h-9 text-[10px]"
-                  placeholder="AIzaSy..."
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Actions */}
         <div className="flex justify-end gap-3">

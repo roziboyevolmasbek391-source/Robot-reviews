@@ -95,102 +95,12 @@ function generateLocalDrafts(text, rating, authorName, branchName) {
 
 // Main AI analysis function (updates sentiment, topics, and suggests replies)
 async function analyzeReview(text, rating, authorName = "Anonim", branchName = "") {
-  // 1. Check database for GEMINI_API_KEY
-  let apiKey = "";
-  try {
-    const keySetting = await prisma.systemSetting.findUnique({
-      where: { key: "GEMINI_API_KEY" }
-    });
-    if (keySetting && keySetting.value) {
-      apiKey = keySetting.isSecret ? decrypt(keySetting.value) : keySetting.value;
-    }
-  } catch (dbError) {
-    console.error("Failed to read GEMINI_API_KEY from database:", dbError);
-  }
-
-  // 2. Set default sentiment and local topics
+  // Set default sentiment and local topics
   let sentiment = rating >= 4 ? "POSITIVE" : rating === 3 ? "NEUTRAL" : "NEGATIVE";
   let topics = detectTopicsLocal(text);
   let drafts = generateLocalDrafts(text, rating, authorName, branchName);
 
-  if (!apiKey || apiKey.trim() === "") {
-    // Return high-fidelity local templates
-    return {
-      sentiment,
-      topics,
-      replyRu: drafts.replyRu,
-      replyUz: drafts.replyUz,
-      aiUsed: false
-    };
-  }
-
-  // 3. Invoke Gemini API
-  try {
-    const promptText = `
-Вы — аналитический робот Mazzali. Проанализируйте следующий отзыв клиента о ресторане/доставке Mazzali. 
-Оценка: ${rating} из 5.
-Автор: ${authorName}.
-Филиал: ${branchName}.
-Текст отзыва: "${text || "(без текста)"}".
-
-Определите:
-1. Тональность (sentiment): "POSITIVE" (4-5 звезд), "NEUTRAL" (3 звезды), "NEGATIVE" (1-2 звезды).
-2. Темы (topics): выберите только подходящие из списка ["Качество еды", "Скорость доставки", "Сервис/Обслуживание", "Чистота", "Цены"]. Если тем нет, верните пустой список.
-3. Предложите вежливый, профессиональный ответ на русском языке (replyRu).
-4. Предложите вежливый, профессиональный ответ на узбекском языке (replyUz).
-
-Верните результат строго в формате JSON без разметки markdown (без \`\`\`json):
-{
-  "sentiment": "POSITIVE" | "NEUTRAL" | "NEGATIVE",
-  "topics": ["Тема1", "Тема2"],
-  "replyRu": "Текст ответа на русском...",
-  "replyUz": "O'zbek tilidagi javob matni..."
-}
-`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: promptText
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API returned status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (responseText) {
-      const parsed = JSON.parse(responseText.trim());
-      return {
-        sentiment: parsed.sentiment || sentiment,
-        topics: Array.isArray(parsed.topics) ? parsed.topics : topics,
-        replyRu: parsed.replyRu || drafts.replyRu,
-        replyUz: parsed.replyUz || drafts.replyUz,
-        aiUsed: true
-      };
-    }
-  } catch (geminiError) {
-    console.error("Gemini API call failed, falling back to local engine:", geminiError.message);
-  }
-
-  // Fallback return if Gemini call fails
+  // Return high-fidelity local templates
   return {
     sentiment,
     topics,

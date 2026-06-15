@@ -707,7 +707,7 @@ export default function VendorsAggregatorPage() {
                             : "border-purple-800 text-purple-400 hover:bg-purple-600/10"
                         }`}
                       >
-                        {generatingReply ? "Генерация ответа ИИ..." : "🤖 Сгенерировать AI-ответ"}
+                        {generatingReply ? "Генерация ответа..." : "📝 Сгенерировать ответ по шаблону"}
                       </Button>
                     </div>
 
@@ -736,10 +736,6 @@ export default function VendorsAggregatorPage() {
                       placeholder="Введите текст ответа клиенту здесь..."
                       className="w-full h-24 p-3 bg-slate-950 border border-slate-800 text-white rounded-xl text-xs focus:ring-1 focus:ring-violet-500 outline-none"
                     />
-
-                    {aiUsed && (
-                      <p className="text-[9px] text-emerald-400">🤖 Ответ сгенерирован с помощью Gemini API</p>
-                    )}
 
                     <Button
                       onClick={handleSubmitReply}
