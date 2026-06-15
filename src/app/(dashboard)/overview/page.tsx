@@ -10,6 +10,7 @@ import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { MessageSquare, Star, ThumbsUp, ThumbsDown, Calendar as CalendarIcon, Lightbulb, Building2 } from "lucide-react";
 
 import {
   ResponsiveContainer,
@@ -361,7 +362,7 @@ export default function OverviewPage() {
                      (selectedRange.to ? ` - ${format(selectedRange.to, "dd MMM yyyy", { locale: ru })}` : "")
                    ) : "Выбрать даты"}
                 </span>
-                <span className="text-slate-400">📅</span>
+                <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0 ml-1.5" />
               </button>
 
               {datePickerOpen && (
@@ -516,25 +517,25 @@ export default function OverviewPage() {
       {/* Global Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Jami sharhlar */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Всего отзывов</CardTitle>
-            <span className="text-xl">💬</span>
+            <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Всего отзывов</CardTitle>
+            <MessageSquare className="h-4.5 w-4.5 text-violet-400 group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{data.summary.totalReviews}</div>
+            <div className="text-2xl font-bold text-white tracking-tight">{data.summary.totalReviews}</div>
             <p className="text-xs text-slate-500 mt-1">Со всех платформ</p>
           </CardContent>
         </Card>
 
         {/* Card 2: O'rtacha reyting */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Средний рейтинг</CardTitle>
-            <span className="text-xl">⭐</span>
+            <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Средний рейтинг</CardTitle>
+            <Star className="h-4.5 w-4.5 text-amber-450 group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{data.summary.averageRating}</div>
+            <div className="text-2xl font-bold text-white tracking-tight">{data.summary.averageRating}</div>
             <p className="text-xs text-slate-500 mt-1">
               Оценка: {data.summary.averageRating >= 4 ? "Отлично" : data.summary.averageRating >= 3 ? "Средне" : "Плохо"}
             </p>
@@ -542,13 +543,13 @@ export default function OverviewPage() {
         </Card>
 
         {/* Card 3: Ijobiy sharhlar */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Положительные</CardTitle>
-            <span className="text-xl text-emerald-500">👍</span>
+            <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Положительные</CardTitle>
+            <ThumbsUp className="h-4.5 w-4.5 text-emerald-450 group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">{data.summary.positiveReviews}</div>
+            <div className="text-2xl font-bold text-emerald-400 tracking-tight">{data.summary.positiveReviews}</div>
             <p className="text-xs text-slate-500 mt-1">
               {data.summary.totalReviews > 0 ? Math.round((data.summary.positiveReviews / data.summary.totalReviews) * 100) : 0}% от общего
             </p>
@@ -556,13 +557,13 @@ export default function OverviewPage() {
         </Card>
 
         {/* Card 4: Salbiy sharhlar */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Негативные</CardTitle>
-            <span className="text-xl text-red-500">👎</span>
+            <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Негативные</CardTitle>
+            <ThumbsDown className="h-4.5 w-4.5 text-rose-500 group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-400">{data.summary.negativeReviews}</div>
+            <div className="text-2xl font-bold text-red-400 tracking-tight">{data.summary.negativeReviews}</div>
             <p className="text-xs text-slate-500 mt-1">
               {data.summary.totalReviews > 0 ? Math.round((data.summary.negativeReviews / data.summary.totalReviews) * 100) : 0}% от общего
             </p>
@@ -573,7 +574,7 @@ export default function OverviewPage() {
       {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Chart 5: TOP Filiallar */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100 flex flex-col justify-between md:col-span-2">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100 flex flex-col justify-between md:col-span-2">
           <CardHeader>
             <CardTitle className="text-base font-bold text-white">Рейтинг филиалов (по количеству отзывов)</CardTitle>
             <CardDescription className="text-slate-400">Распределение по платформам. Нажмите на филиал для деталей.</CardDescription>
@@ -692,7 +693,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
       {/* Chart 1: Kunlik sharhlar soni */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100">
           <CardHeader>
             <CardTitle className="text-base font-bold text-white">Динамика отзывов (По дням)</CardTitle>
             <CardDescription className="text-slate-400">Количество отзывов за выбранный период</CardDescription>
@@ -736,7 +737,7 @@ export default function OverviewPage() {
         </Card>
 
         {/* Chart 2: Platformalar bo'yicha sharhlar */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100">
           <CardHeader>
             <CardTitle className="text-base font-bold text-white">Распределение по платформам</CardTitle>
             <CardDescription className="text-slate-400">Источники собранных отзывов в процентах</CardDescription>
@@ -792,7 +793,7 @@ export default function OverviewPage() {
         </Card>
 
         {/* Chart 4: AI Topics analysis */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100 flex flex-col justify-between">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <div>
               <CardTitle className="text-base font-bold text-white">Анализ тем ИИ (ИИ Топики)</CardTitle>
@@ -882,8 +883,9 @@ export default function OverviewPage() {
               </ResponsiveContainer>
             </div>
 
-            <div className="text-[10px] text-slate-500 italic text-center">
-              💡 Нажмите на полосу или название темы выше, чтобы сравнить её по филиалам ниже
+            <div className="text-[10px] text-slate-500 italic flex items-center justify-center gap-1.5 py-1">
+              <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span>Нажмите на полосу или название темы выше, чтобы сравнить её по филиалам ниже</span>
             </div>
 
             {selectedTopic && (
@@ -939,7 +941,7 @@ export default function OverviewPage() {
         </Card>
 
         {/* Chart 3: Reytinglar taqsimoti (1-5) */}
-        <Card className="border-slate-800 bg-slate-900/50 text-slate-100 flex flex-col justify-between">
+        <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100 flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <div>
               <CardTitle className="text-base font-bold text-white">Распределение оценок</CardTitle>
@@ -981,7 +983,7 @@ export default function OverviewPage() {
         </div>
 
       {/* Branch Growth Table */}
-      <Card className="border-slate-800 bg-slate-900/50 text-slate-100 mt-6">
+      <Card className="border-slate-800/80 bg-slate-900/35 hover:border-slate-750/30 hover:bg-slate-900/45 transition-all duration-300 shadow-md shadow-violet-950/5 text-slate-100 mt-6">
         <CardHeader>
           <CardTitle className="text-base font-bold text-white">Динамика роста по филиалам</CardTitle>
           <CardDescription className="text-slate-400">Сравнение количества отзывов текущего месяца с прошлым месяцем</CardDescription>
@@ -1057,7 +1059,8 @@ export default function OverviewPage() {
             <div className="space-y-6">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <span>🏢</span> {modalData.charts.branchDistribution[0]?.name || "Филиал"}
+                  <Building2 className="h-5 w-5 text-violet-400 shrink-0" />
+                  <span>{modalData.charts.branchDistribution[0]?.name || "Филиал"}</span>
                 </DialogTitle>
                 <DialogDescription className="text-slate-400 text-xs">
                   Подробные графики и аналитика по филиалу

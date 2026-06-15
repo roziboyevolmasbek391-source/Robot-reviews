@@ -148,43 +148,43 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     rawTags.forEach(rawTag => {
       const rtLower = rawTag.toLowerCase();
       if (rtLower.includes("вкусная еда") || rtLower.includes("вкусная  еда")) {
-        tags.push({ label: "Вкусно / Yoqimli ta'm 👍", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Вкусно / Yoqimli ta'm", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("качество упаковки") || rtLower.includes("качество  упаковки")) {
-        tags.push({ label: "Качественно / Sifatli ✨", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Качественно / Sifatli", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("приборы в комплекте") || rtLower.includes("приборы  в комплекте")) {
-        tags.push({ label: "Приборы на месте / Priborlar bor 🍴", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Приборы на месте / Priborlar bor", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("скорость доставки") || rtLower.includes("скорость  доставки")) {
-        tags.push({ label: "Быстро / Tezkor ⏱️", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Быстро / Tezkor", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("вежливость курьера") || rtLower.includes("вежливость  курьера")) {
-        tags.push({ label: "Вежливый курьер / Kuryer odobli 🚴", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Вежливый курьер / Kuryer odobli", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("курьер был в форме") || rtLower.includes("курьер был  в форме")) {
-        tags.push({ label: "Курьер в форме / Kuryer formada 🚴", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Курьер в форме / Kuryer formada", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("учел комментарий")) {
-        tags.push({ label: "Учел комментарий / Izohni hisobga oldi 📝", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+        tags.push({ label: "Учел комментарий / Izohni hisobga oldi", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
       } else if (rtLower.includes("еда остыла") || rtLower.includes("еда  остыла")) {
-        tags.push({ label: "Холодная еда / Ovqat sovigan ❄️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Холодная еда / Ovqat sovigan", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("еда невкусная") || rtLower.includes("еда  невкусная")) {
-        tags.push({ label: "Не вкусно / Mazasiz 🤢", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Не вкусно / Mazasiz", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("плохо упаковано") || rtLower.includes("плохо  упаковано")) {
-        tags.push({ label: "Плохо упаковано / Yomon qadoq 📦", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Плохо упаковано / Yomon qadoq", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("заказ неполный") || rtLower.includes("заказ  неполный")) {
-        tags.push({ label: "Неполный заказ / To'liq emas 📦", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Неполный заказ / To'liq emas", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("не было приборов") || rtLower.includes("не было  приборов")) {
-        tags.push({ label: "Нет приборов / Priborsiz 🍴", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Нет приборов / Priborsiz", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("блюдо не как на фото") || rtLower.includes("блюдо не как  на фото")) {
-        tags.push({ label: "Не как на фото / Rasmdagidek emas 📸", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Не как на фото / Rasmdagidek emas", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("не учли пожелания") || rtLower.includes("не учли  пожелания")) {
-        tags.push({ label: "Не учли пожелания / Istak hisobga olinmadi 📝", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Не учли пожелания / Istak hisobga olinmadi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("курьер долго искал адрес") || rtLower.includes("курьер долго  искал адрес")) {
-        tags.push({ label: "Долго искали адрес / Manzil kechikdi ⏱️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Долго искали адрес / Manzil kechikdi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("заказ поврежден") || rtLower.includes("заказ  поврежден")) {
-        tags.push({ label: "Поврежден заказ / Shikastlangan 📦", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Поврежден заказ / Shikastlangan", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("курьер был невежлив") || rtLower.includes("курьер был  невежлив")) {
-        tags.push({ label: "Курьер невежлив / Kuryer qo'pol 🚴", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Курьер невежлив / Kuryer qo'pol", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("курьер не учел комментарий") || rtLower.includes("курьер не учел  комментарий")) {
-        tags.push({ label: "Не учел комментарий / Izohni e'tiborsiz qoldirdi 📝", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Не учел комментарий / Izohni e'tiborsiz qoldirdi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else if (rtLower.includes("долгая доставка") || rtLower.includes("долгая  доставка")) {
-        tags.push({ label: "Долгая доставка / Kech qoldi ⏱️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+        tags.push({ label: "Долгая доставка / Kech qoldi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
       } else {
         const isNeg = r <= 2;
         const isNeut = r === 3;
@@ -224,7 +224,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("вонюч") ||
     lower.includes("sassiq")
   ) {
-    tags.push({ label: "Срок годности / Muddati o'tgan 🤢", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Срок годности / Muddati o'tgan", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 2. Недовоз / Неполный заказ
@@ -248,7 +248,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("etishmov") ||
     lower.includes("кам келди")
   ) {
-    tags.push({ label: "Недовоз / Kam keldi 📦", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Недовоз / Kam keldi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 3. Нет приборов
@@ -264,7 +264,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("ложек") ||
     lower.includes("вилок")
   ) {
-    tags.push({ label: "Нет приборов / Priborsiz 🍴", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Нет приборов / Priborsiz", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 4. Холодная еда
@@ -278,7 +278,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("холодное") ||
     lower.includes("муздак")
   ) {
-    tags.push({ label: "Холодная еда / Ovqat sovigan ❄️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Холодная еда / Ovqat sovigan", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 5. Не разогрели
@@ -289,7 +289,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("разогре") ||
     lower.includes("isitish")
   ) {
-    tags.push({ label: "Не разогрели / Isitilmagan ❄️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Не разогрели / Isitilmagan", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 6. Не вкусно
@@ -306,7 +306,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("странный вкус") ||
     lower.includes("g'alati ta'm")
   ) {
-    tags.push({ label: "Не вкусно / Mazasiz 🤢", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Не вкусно / Mazasiz", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 7. Плохое качество / Волосья / Грязь
@@ -331,7 +331,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("кости") ||
     lower.includes("кост")
   ) {
-    tags.push({ label: "Плохое качество / Sifatsiz ⚠️", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Плохое качество / Sifatsiz", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 8. Курьер / Доставка
@@ -348,7 +348,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("груб") || 
     lower.includes("опозда")
   ) {
-    tags.push({ label: "Курьер / Kuryer muammosi 🚴", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Курьер / Kuryer muammosi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 9. Staff/Service
@@ -368,7 +368,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("админ") ||
     lower.includes("хами")
   ) {
-    tags.push({ label: "Грубый персонал / Qo'pol xodim 👤", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Грубый персонал / Qo'pol xodim", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 10. Payment issues
@@ -385,7 +385,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
     lower.includes("пластик") ||
     lower.includes("наличн")
   ) {
-    tags.push({ label: "Проблемы с оплатой / To'lov muammosi 💳", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+    tags.push({ label: "Проблемы с оплатой / To'lov muammosi", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
   }
 
   // 11. Positive matching (only when rating >= 4)
@@ -407,7 +407,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
       lower.includes("yoqdi") || 
       lower.includes("рекоменд")
     ) {
-      tags.push({ label: "Вкусно / Yoqimli ta'm 👍", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+      tags.push({ label: "Вкусно / Yoqimli ta'm", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
     }
 
     // Freshness
@@ -416,7 +416,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
       lower.includes("yangi") || 
       lower.includes("fresh")
     ) {
-      tags.push({ label: "Свежее / Yangi 🍎", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+      tags.push({ label: "Свежее / Yangi", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
     }
 
     // Quality
@@ -428,7 +428,7 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
       lower.includes("chiroyli") || 
       lower.includes("красив")
     ) {
-      tags.push({ label: "Качественно / Sifatli ✨", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+      tags.push({ label: "Качественно / Sifatli", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
     }
 
     // Speed
@@ -439,18 +439,18 @@ export function getWarningTags(text: string | null, rating?: number): ReviewTag[
       lower.includes("скоро") || 
       lower.includes("momental")
     ) {
-      tags.push({ label: "Быстро / Tezkor ⏱️", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+      tags.push({ label: "Быстро / Tezkor", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
     }
   }
 
   // Fallbacks if no keywords matched but text exists
   if (tags.length === 0) {
     if (r >= 4) {
-      tags.push({ label: "Хороший отзыв / Yaxshi fikr 👍", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
+      tags.push({ label: "Хороший отзыв / Yaxshi fikr", colorClass: "bg-emerald-600/90 text-white border-emerald-500 shadow-emerald-950/40" });
     } else if (r === 3) {
-      tags.push({ label: "Нейтральный отзыв / Neytral fikr 💬", colorClass: "bg-amber-500/90 text-white border-amber-400 shadow-amber-950/40" });
+      tags.push({ label: "Нейтральный отзыв / Neytral fikr", colorClass: "bg-amber-500/90 text-white border-amber-400 shadow-amber-950/40" });
     } else {
-      tags.push({ label: "Негативный отзыв / Salbiy fikr 💬", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
+      tags.push({ label: "Негативный отзыв / Salbiy fikr", colorClass: "bg-red-600/90 text-white border-red-500 animate-pulse shadow-red-950/40" });
     }
   }
 

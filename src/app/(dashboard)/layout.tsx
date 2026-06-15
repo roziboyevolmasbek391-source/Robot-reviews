@@ -4,7 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  ChevronLeft, 
+  ChevronRight,
+  LayoutDashboard,
+  Truck,
+  Map,
+  Building2,
+  Settings,
+  FileText,
+  MessageSquareMore,
+  LogOut
+} from "lucide-react";
 
 interface User {
   username: string;
@@ -66,19 +79,23 @@ export default function DashboardLayout({
   };
 
   const navItems = [
-    { href: "/overview", label: "Обзор дашборда", icon: "📊" },
-    { href: "/vendors", label: "Службы доставки", icon: "🛵" },
-    { href: "/maps-reviews", label: "Центр отзывов карт", icon: "🗺️" },
-    { href: "/admin/branches", label: "Филиалы", icon: "🏢" },
+    { href: "/overview", label: "Обзор дашборда", icon: LayoutDashboard },
+    { href: "/vendors", label: "Службы доставки", icon: Truck },
+    { href: "/maps-reviews", label: "Центр отзывов карт", icon: Map },
+    { href: "/admin/branches", label: "Филиалы", icon: Building2 },
   ];
 
   const adminItems = [
-    { href: "/admin/settings", label: "Настройки API & Системы", icon: "⚙️" },
-    { href: "/admin/logs", label: "Логи синхронизации", icon: "📑" },
+    { href: "/admin/settings", label: "Настройки API & Системы", icon: Settings },
+    { href: "/admin/logs", label: "Логи синхронизации", icon: FileText },
   ];
 
   return (
-    <div className="dark flex h-screen w-screen bg-slate-950 font-sans text-slate-100 overflow-hidden relative">
+    <div className="dark flex h-screen w-screen bg-slate-950 font-sans text-slate-100 overflow-hidden relative bg-grid-pattern">
+      {/* Background ambient glows */}
+      <div className="ambient-glow-top" />
+      <div className="ambient-glow-bottom" />
+
       {/* Mobile Sidebar Backdrop Overlay */}
       {isMobileSidebarOpen && (
         <div 
@@ -99,10 +116,10 @@ export default function DashboardLayout({
           isSidebarCollapsed ? "md:px-4 md:justify-center" : "justify-between"
         }`}>
           <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white font-bold text-lg">
-              💬
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-bold text-lg shadow-md shadow-violet-950/20">
+              <MessageSquareMore className="h-4 w-4" />
             </div>
-            <span className={`font-bold text-lg tracking-tight text-white transition-all ${
+            <span className={`font-bold text-sm tracking-tight text-white transition-all ${
               isSidebarCollapsed ? "md:hidden" : "block"
             }`}>ReviewMonitor</span>
           </div>
@@ -123,17 +140,18 @@ export default function DashboardLayout({
               isSidebarCollapsed ? "md:hidden" : "block"
             }`}>Основные панели</p>
             {navItems.map((item) => {
+              const IconComponent = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link key={item.href} href={item.href}>
                   <span className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition duration-200 gap-3 border ${
                     isActive 
-                      ? "bg-violet-600/15 text-violet-400 border-violet-500/10" 
-                      : "text-slate-400 hover:bg-slate-900 hover:text-white border-transparent"
+                      ? "bg-violet-600/10 text-violet-400 border-violet-500/10 shadow-sm shadow-violet-950/10" 
+                      : "text-slate-400 hover:bg-slate-900/40 hover:text-white border-transparent hover:border-slate-800/40"
                   } ${
                     isSidebarCollapsed ? "md:justify-center md:px-2" : ""
                   }`} title={isSidebarCollapsed ? item.label : undefined}>
-                    <span className="text-base shrink-0">{item.icon}</span>
+                    <IconComponent className="h-4 w-4 shrink-0" />
                     <span className={`transition-all duration-200 ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
                       {item.label}
                     </span>
@@ -150,17 +168,18 @@ export default function DashboardLayout({
                 isSidebarCollapsed ? "md:hidden" : "block"
               }`}>Управление (Админ)</p>
               {adminItems.map((item) => {
+                const IconComponent = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link key={item.href} href={item.href}>
                     <span className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition duration-200 gap-3 border ${
                       isActive 
-                        ? "bg-violet-600/15 text-violet-400 border-violet-500/10" 
-                        : "text-slate-400 hover:bg-slate-900 hover:text-white border-transparent"
+                        ? "bg-violet-600/10 text-violet-400 border-violet-500/10 shadow-sm shadow-violet-950/10" 
+                        : "text-slate-400 hover:bg-slate-900/40 hover:text-white border-transparent hover:border-slate-800/40"
                     } ${
                       isSidebarCollapsed ? "md:justify-center md:px-2" : ""
                     }`} title={isSidebarCollapsed ? item.label : undefined}>
-                      <span className="text-base shrink-0">{item.icon}</span>
+                      <IconComponent className="h-4 w-4 shrink-0" />
                       <span className={`transition-all duration-200 ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
                         {item.label}
                       </span>
@@ -173,11 +192,11 @@ export default function DashboardLayout({
         </nav>
 
         {/* Footer / User Profile */}
-        <div className={`p-4 border-t border-slate-900 bg-slate-900/20 shrink-0 ${
+        <div className={`p-4 border-t border-slate-900 bg-slate-900/10 shrink-0 ${
           isSidebarCollapsed ? "md:p-2 md:flex md:flex-col md:items-center md:space-y-3" : "space-y-3"
         }`}>
           <div className={`flex items-center gap-3 ${isSidebarCollapsed ? "md:justify-center" : ""}`}>
-            <div className="h-9 w-9 shrink-0 rounded-full bg-violet-600/20 text-violet-400 border border-violet-500/20 flex items-center justify-center font-semibold text-sm" title={user?.fullName}>
+            <div className="h-9 w-9 shrink-0 rounded-full bg-violet-600/10 text-violet-400 border border-violet-500/10 flex items-center justify-center font-semibold text-sm" title={user?.fullName}>
               {user?.fullName ? user.fullName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "AD"}
             </div>
             <div className={`overflow-hidden transition-all ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
@@ -188,20 +207,27 @@ export default function DashboardLayout({
           <Button 
             onClick={handleLogout}
             variant="outline" 
-            className={`border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 text-xs ${
+            className={`border-slate-800 bg-slate-950/50 text-slate-400 hover:text-white hover:bg-slate-900 text-xs ${
               isSidebarCollapsed ? "md:w-9 md:h-9 md:p-0 md:flex md:items-center md:justify-center" : "w-full py-1.5"
             }`}
             title="Выйти из системы"
           >
-            {isSidebarCollapsed ? "👋" : "Выйти из системы 👋"}
+            {isSidebarCollapsed ? (
+              <LogOut className="h-4 w-4" />
+            ) : (
+              <>
+                <LogOut className="h-3.5 w-3.5 mr-2" />
+                Выйти из системы
+              </>
+            )}
           </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
-        <header className="h-16 border-b border-slate-900 px-4 md:px-8 flex items-center justify-between bg-slate-900/10 shrink-0 gap-2">
+        <header className="h-16 border-b border-slate-900 px-4 md:px-8 flex items-center justify-between bg-slate-950/20 backdrop-blur-md shrink-0 gap-2">
           <div className="flex items-center gap-3 overflow-hidden">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -232,7 +258,7 @@ export default function DashboardLayout({
             </h1>
           </div>
           <div className="flex items-center gap-4 shrink-0">
-            <div className="text-[10px] md:text-xs text-slate-500 bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
+            <div className="text-[10px] md:text-xs text-slate-500 bg-slate-950/40 backdrop-blur-md border border-slate-800/60 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span className="hidden sm:inline">Синхронизатор:</span> Активен (Cron)
             </div>
@@ -240,7 +266,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-950">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-transparent">
           {children}
         </main>
       </div>

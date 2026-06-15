@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Sparkles, MessageSquare, MessageSquareOff, Star, ThumbsUp, ThumbsDown, Clock, ExternalLink, Eye, CheckCircle2, Save, Send, RefreshCw, Tag, Check, FileText, TrendingUp } from "lucide-react";
 import {
   formatDate,
   formatTime,
   getRatingBg,
   getRatingColor,
-  getStarEmoji,
   getWarningTags,
 } from "@/lib/utils";
 
@@ -245,23 +245,25 @@ export default function VendorsAggregatorPage() {
         <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl gap-2 w-full md:w-auto self-start">
           <button
             onClick={() => togglePlatform("YANDEX_VENDOR")}
-            className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${
+            className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${
               !isUzum
                 ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30 scale-105 border border-purple-500/20"
                 : "text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent"
             }`}
           >
-            <span className="text-sm">🟣</span> Yandex Vendor
+            <span className="h-2 w-2 rounded-full bg-purple-500 shrink-0" />
+            Yandex Vendor
           </button>
           <button
             onClick={() => togglePlatform("UZUM_VENDOR")}
-            className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${
+            className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${
               isUzum
                 ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30 scale-105 border border-orange-500/20"
                 : "text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent"
             }`}
           >
-            <span className="text-sm">🟠</span> Uzum Vendor
+            <span className="h-2 w-2 rounded-full bg-orange-500 shrink-0" />
+            Uzum Vendor
           </button>
         </div>
       </div>
@@ -274,23 +276,25 @@ export default function VendorsAggregatorPage() {
               setRatingFilter("all");
               setPage(1);
             }}
-            className={`border-slate-800 bg-slate-900/40 text-slate-100 cursor-pointer hover:bg-slate-900/60 hover:border-slate-700 transition active:scale-95 duration-200 ${
+            className={`border-slate-800/80 bg-slate-900/35 text-slate-100 cursor-pointer hover:border-slate-700/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] active:scale-95 duration-200 group ${
               ratingFilter === "all" ? "border-violet-500 bg-violet-950/10 ring-1 ring-violet-500/20" : ""
             }`}
           >
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400">Всего отзывов</span>
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Всего отзывов</span>
+              <MessageSquare className="h-3.5 w-3.5 text-violet-400 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-white">{stats.totalReviews} шт.</div>
+              <div className="text-xl font-bold text-white tracking-tight">{stats.totalReviews} шт.</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400">Средний рейтинг</span>
+          <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:-translate-y-[2px] transition-all duration-300 shadow-sm shadow-violet-950/2 group">
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Средний рейтинг</span>
+              <Star className="h-3.5 w-3.5 text-amber-450 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-white">{stats.averageRating}</div>
+              <div className="text-xl font-bold text-white tracking-tight">{stats.averageRating}</div>
             </CardContent>
           </Card>
           <Card 
@@ -298,17 +302,16 @@ export default function VendorsAggregatorPage() {
               setRatingFilter("positive");
               setPage(1);
             }}
-            className={`border-slate-800 bg-slate-900/40 text-slate-100 cursor-pointer hover:bg-slate-900/60 hover:border-emerald-500/30 transition active:scale-95 duration-200 ${
+            className={`border-slate-800/80 bg-slate-900/35 text-slate-100 cursor-pointer hover:border-emerald-500/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] active:scale-95 duration-200 group ${
               ratingFilter === "positive" ? "border-emerald-500 bg-emerald-950/10 ring-1 ring-emerald-500/20" : ""
             }`}
           >
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                Положительные (4-5) <span className="text-[10px] text-emerald-400">👁️</span>
-              </span>
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Положительные</span>
+              <ThumbsUp className="h-3.5 w-3.5 text-emerald-450 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-emerald-400">{stats.positiveReviews} шт.</div>
+              <div className="text-xl font-bold text-emerald-400 tracking-tight">{stats.positiveReviews} шт.</div>
             </CardContent>
           </Card>
           <Card 
@@ -316,33 +319,34 @@ export default function VendorsAggregatorPage() {
               setRatingFilter("negative");
               setPage(1);
             }}
-            className={`border-slate-800 bg-slate-900/40 text-slate-100 cursor-pointer hover:bg-slate-900/60 hover:border-red-500/30 transition active:scale-95 duration-200 ${
+            className={`border-slate-800/80 bg-slate-900/35 text-slate-100 cursor-pointer hover:border-red-500/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] active:scale-95 duration-200 group ${
               ratingFilter === "negative" ? "border-red-500 bg-red-950/10 ring-1 ring-red-500/20" : ""
             }`}
           >
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                Негативные (1-2) <span className="text-[10px] text-red-400">👁️</span>
-              </span>
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Негативные</span>
+              <ThumbsDown className="h-3.5 w-3.5 text-rose-500 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-red-400">{stats.negativeReviews} шт.</div>
+              <div className="text-xl font-bold text-red-400 tracking-tight">{stats.negativeReviews} шт.</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400">Получено сегодня</span>
+          <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:-translate-y-[2px] transition-all duration-300 shadow-sm shadow-violet-950/2 group">
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Получено сегодня</span>
+              <Clock className="h-3.5 w-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-violet-400">+{stats.reviewsToday}</div>
+              <div className="text-xl font-bold text-violet-400 tracking-tight">+{stats.reviewsToday}</div>
             </CardContent>
           </Card>
-          <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-            <CardHeader className="p-4 pb-2">
-              <span className="text-xs font-medium text-slate-400">За эту неделю</span>
+          <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:-translate-y-[2px] transition-all duration-300 shadow-sm shadow-violet-950/2 group">
+            <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">За эту неделю</span>
+              <TrendingUp className="h-3.5 w-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-xl font-bold text-indigo-400">+{stats.reviewsThisWeek}</div>
+              <div className="text-xl font-bold text-indigo-400 tracking-tight">+{stats.reviewsThisWeek}</div>
             </CardContent>
           </Card>
         </div>
@@ -484,8 +488,9 @@ export default function VendorsAggregatorPage() {
                         </td>
                         <td className="p-4 text-white font-medium">{review.branch?.name}</td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(review.rating)}`}>
-                            {getStarEmoji(review.rating)}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(review.rating)}`}>
+                            <Star className="h-3 w-3 fill-current shrink-0" />
+                            <span>{review.rating.toFixed(1)}</span>
                           </span>
                         </td>
                         <td className="p-4 text-slate-300 font-medium">{review.author}</td>
@@ -501,13 +506,15 @@ export default function VendorsAggregatorPage() {
                               </span>
                             )}
                             {review.aiTopics && review.aiTopics.split(", ").filter(Boolean).map((t, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
-                                🏷️ {t}
+                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
+                                <Tag className="h-2.5 w-2.5 shrink-0" />
+                                <span>{t}</span>
                               </span>
                             ))}
                             {review.replyText && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold">
-                                ✓ Отвечено
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-semibold">
+                                <Check className="h-2.5 w-2.5 shrink-0" />
+                                <span>Отвечено</span>
                               </span>
                             )}
                             {!review.aiSentiment && !review.aiTopics && (
@@ -522,19 +529,21 @@ export default function VendorsAggregatorPage() {
                                     </span>
                                   ))
                                 ) : (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                                    💬 Есть отзыв
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                    <MessageSquare className="h-3 w-3 shrink-0" />
+                                    <span>Есть отзыв</span>
                                   </span>
                                 )
                               ) : (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
                                   review.rating >= 4 
                                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
                                     : review.rating === 3 
                                     ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
                                     : "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse"
                                 }`}>
-                                  Отзыв без комментария 💬
+                                  <MessageSquareOff className="h-3 w-3 shrink-0" />
+                                  <span>Отзыв без комментария</span>
                                 </span>
                               )
                             )}
@@ -554,13 +563,14 @@ export default function VendorsAggregatorPage() {
                             onClick={() => setSelectedReview(review)}
                             variant="ghost"
                             size="sm"
-                            className={`font-medium ${
+                            className={`font-medium flex items-center justify-center gap-1 mx-auto ${
                               isUzum 
                                 ? "hover:bg-orange-600/20 text-orange-400 hover:text-orange-300" 
                                 : "hover:bg-purple-600/20 text-purple-400 hover:text-purple-300"
                             }`}
                           >
-                            Смотреть
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Смотреть</span>
                           </Button>
                         </td>
                       </tr>
@@ -605,8 +615,9 @@ export default function VendorsAggregatorPage() {
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 Детали отзыва
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(selectedReview.rating)}`}>
-                  {getStarEmoji(selectedReview.rating)}
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(selectedReview.rating)}`}>
+                  <Star className="h-3 w-3 fill-current shrink-0" />
+                  <span>{selectedReview.rating.toFixed(1)}</span>
                 </span>
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -629,18 +640,28 @@ export default function VendorsAggregatorPage() {
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-semibold text-slate-500">ИИ Анализ отзыва</p>
                 <div className="flex flex-wrap gap-2 p-2.5 bg-slate-950 rounded-xl border border-slate-900/60">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold ${
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold gap-1 ${
                     (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" 
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
                       : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" 
                       ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
                       : "bg-red-500/10 text-red-400 border-red-500/20"
                   }`}>
-                    Тональность: {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? "Положительный 🟢" : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? "Нейтральный 🟡" : "Негативный 🔴"}
+                    {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? (
+                      <ThumbsUp className="h-3 w-3 shrink-0" />
+                    ) : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? (
+                      <Star className="h-3 w-3 text-amber-450 shrink-0" />
+                    ) : (
+                      <ThumbsDown className="h-3 w-3 shrink-0" />
+                    )}
+                    <span>
+                      Тональность: {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? "Положительный" : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? "Нейтральный" : "Негативный"}
+                    </span>
                   </span>
                   {selectedReview.aiTopics ? selectedReview.aiTopics.split(", ").filter(Boolean).map((topic: string, idx: number) => (
-                    <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
-                      🏷️ {topic}
+                    <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
+                      <Tag className="h-2.5 w-2.5 text-slate-500 shrink-0" />
+                      <span>{topic}</span>
                     </span>
                   )) : (
                     <span className="text-[10px] text-slate-500 italic">Темы не определены</span>
@@ -669,14 +690,15 @@ export default function VendorsAggregatorPage() {
                 <p className="text-[10px] uppercase font-semibold text-slate-500 mb-1">Текст отзыва</p>
                 <div className="p-4 bg-slate-950 rounded-xl text-slate-300 leading-relaxed max-h-36 overflow-y-auto italic">
                   {selectedReview.text ? `"${selectedReview.text}"` : (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
                       selectedReview.rating >= 4 
                         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
                         : selectedReview.rating === 3 
                         ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
                         : "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse"
                     }`}>
-                      Отзыв без комментария 💬
+                      <MessageSquareOff className="h-3 w-3 shrink-0" />
+                      <span>Отзыв без комментария</span>
                     </span>
                   )}
                 </div>
@@ -701,13 +723,14 @@ export default function VendorsAggregatorPage() {
                         onClick={handleGenerateReply}
                         disabled={generatingReply}
                         variant="outline"
-                        className={`h-8 text-[10px] flex-1 ${
+                        className={`h-8 text-[10px] flex-1 flex items-center justify-center gap-1.5 ${
                           isUzum 
                             ? "border-orange-800 text-orange-400 hover:bg-orange-600/10" 
                             : "border-purple-800 text-purple-400 hover:bg-purple-600/10"
                         }`}
                       >
-                        {generatingReply ? "Генерация ответа..." : "📝 Сгенерировать ответ по шаблону"}
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>{generatingReply ? "Генерация ответа..." : "Сгенерировать ответ по шаблону"}</span>
                       </Button>
                     </div>
 
@@ -740,11 +763,12 @@ export default function VendorsAggregatorPage() {
                     <Button
                       onClick={handleSubmitReply}
                       disabled={submittingReply || !replyText.trim()}
-                      className={`w-full text-white text-xs h-9 font-bold rounded-lg ${
+                      className={`w-full text-white text-xs h-9 font-bold rounded-lg flex items-center justify-center gap-1 ${
                         isUzum ? "bg-orange-600 hover:bg-orange-500" : "bg-purple-600 hover:bg-purple-500"
                       }`}
                     >
-                      {submittingReply ? "Сохранение ответа..." : "Сохранить и отправить ответ ✓"}
+                      <span>{submittingReply ? "Сохранение ответа..." : "Сохранить и отправить ответ"}</span>
+                      <Check className="h-4 w-4" />
                     </Button>
                   </div>
                 )}

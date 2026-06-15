@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Sparkles, MessageSquare, MessageSquareOff, Star, ThumbsUp, ThumbsDown, Clock, ExternalLink, Eye, CheckCircle2, Save, Send, RefreshCw, Tag, Check, FileText } from "lucide-react";
 import {
   formatDate,
   formatTime,
@@ -14,7 +15,6 @@ import {
   getRatingColor,
   getSourceColor,
   getSourceLabel,
-  getStarEmoji,
   getWarningTags,
 } from "@/lib/utils";
 
@@ -312,12 +312,22 @@ export default function MapsReviewsCenter() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex flex-wrap md:inline-flex bg-slate-900 border border-slate-800 text-slate-400 h-auto md:h-10 p-1 rounded-xl gap-1">
-          <TabsTrigger value="google" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1">🔵 Google Maps</TabsTrigger>
-          <TabsTrigger value="yandex" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1">🔴 Yandex Maps</TabsTrigger>
-          <TabsTrigger value="dgis" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1">🟢 2GIS</TabsTrigger>
+        <TabsList className="flex flex-wrap md:inline-flex bg-slate-900/60 border border-slate-800/80 text-slate-400 h-auto md:h-10 p-1 rounded-xl gap-1 backdrop-blur-md">
+          <TabsTrigger value="google" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+            Google Maps
+          </TabsTrigger>
+          <TabsTrigger value="yandex" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+            Yandex Maps
+          </TabsTrigger>
+          <TabsTrigger value="dgis" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+            2GIS
+          </TabsTrigger>
           <TabsTrigger value="new" className="rounded-lg text-xs font-semibold px-3 py-1.5 md:py-1 flex items-center gap-1.5 bg-violet-600/10 text-violet-400">
-            🔥 Новые отзывы
+            <Sparkles className="h-3 w-3 shrink-0" />
+            Новые отзывы
             {newReviews.length > 0 && (
               <Badge className="bg-violet-600 text-white border-none text-[9px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center font-bold">
                 {newReviews.length}
@@ -368,36 +378,40 @@ export default function MapsReviewsCenter() {
             {/* Stats */}
             {branchStats && (
               <div className="grid gap-4 md:grid-cols-4">
-                <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-                  <CardHeader className="p-4 pb-1">
-                    <CardTitle className="text-xs font-semibold text-slate-400">Средний рейтинг</CardTitle>
+                <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
+                  <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Средний рейтинг</CardTitle>
+                    <Star className="h-3.5 w-3.5 text-amber-450 group-hover:scale-110 transition-transform" />
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
-                    <div className="text-xl font-bold text-white">{branchStats.averageRating}</div>
+                    <div className="text-xl font-bold text-white tracking-tight">{branchStats.averageRating}</div>
                   </CardContent>
                 </Card>
-                <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-                  <CardHeader className="p-4 pb-1">
-                    <CardTitle className="text-xs font-semibold text-slate-400">Всего отзывов</CardTitle>
+                <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
+                  <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Всего отзывов</CardTitle>
+                    <MessageSquare className="h-3.5 w-3.5 text-violet-400 group-hover:scale-110 transition-transform" />
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
-                    <div className="text-xl font-bold text-white">{branchStats.totalReviews} шт.</div>
+                    <div className="text-xl font-bold text-white tracking-tight">{branchStats.totalReviews} шт.</div>
                   </CardContent>
                 </Card>
-                <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-                  <CardHeader className="p-4 pb-1">
-                    <CardTitle className="text-xs font-semibold text-slate-400">Положительные отзывы</CardTitle>
+                <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
+                  <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Положительные</CardTitle>
+                    <ThumbsUp className="h-3.5 w-3.5 text-emerald-450 group-hover:scale-110 transition-transform" />
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
-                    <div className="text-xl font-bold text-emerald-400">{branchStats.positiveReviews} шт.</div>
+                    <div className="text-xl font-bold text-emerald-400 tracking-tight">{branchStats.positiveReviews} шт.</div>
                   </CardContent>
                 </Card>
-                <Card className="border-slate-800 bg-slate-900/40 text-slate-100">
-                  <CardHeader className="p-4 pb-1">
-                    <CardTitle className="text-xs font-semibold text-slate-400">Негативные отзывы</CardTitle>
+                <Card className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/50 hover:bg-slate-900/45 transition-all duration-300 shadow-sm shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
+                  <CardHeader className="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Негативные</CardTitle>
+                    <ThumbsDown className="h-3.5 w-3.5 text-rose-500 group-hover:scale-110 transition-transform" />
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
-                    <div className="text-xl font-bold text-red-400">{branchStats.negativeReviews} шт.</div>
+                    <div className="text-xl font-bold text-red-400 tracking-tight">{branchStats.negativeReviews} шт.</div>
                   </CardContent>
                 </Card>
               </div>
@@ -412,12 +426,13 @@ export default function MapsReviewsCenter() {
               ) : (
                 <div className="grid gap-4">
                   {reviews.map((r) => (
-                    <Card key={r.id} className="border-slate-800 bg-slate-900/20 text-slate-100 hover:border-slate-700 transition duration-200">
+                    <Card key={r.id} className="border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/60 hover:bg-slate-900/50 transition-all duration-300 shadow-sm shadow-violet-950/5">
                       <CardHeader className="p-4 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 space-y-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-xs text-white">{r.author}</span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold ${getRatingBg(r.rating)}`}>
-                            {getStarEmoji(r.rating)}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(r.rating)}`}>
+                            <Star className="h-3 w-3 fill-current shrink-0" />
+                            <span>{r.rating.toFixed(1)}</span>
                           </span>
                           {r.aiSentiment && (
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-semibold ${
@@ -429,13 +444,15 @@ export default function MapsReviewsCenter() {
                             </span>
                           )}
                           {r.aiTopics && r.aiTopics.split(", ").filter(Boolean).map((t, idx) => (
-                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
-                              🏷️ {t}
+                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
+                              <Tag className="h-2.5 w-2.5 shrink-0" />
+                              <span>{t}</span>
                             </span>
                           ))}
                           {r.replyText && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold">
-                              ✓ Отвечено
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-semibold">
+                              <Check className="h-2.5 w-2.5 shrink-0" />
+                              <span>Отвечено</span>
                             </span>
                           )}
                         </div>
@@ -456,19 +473,21 @@ export default function MapsReviewsCenter() {
                                 </span>
                               ))
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                                💬 Есть отзыв
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                <MessageSquare className="h-3 w-3 shrink-0" />
+                                <span>Есть отзыв</span>
                               </span>
                             )
                           ) : (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
                               r.rating >= 4 
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
                                 : r.rating === 3 
-                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
-                                : "bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse"
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                                : "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse"
                             }`}>
-                              Отзыв без комментария 💬
+                              <MessageSquareOff className="h-3 w-3 shrink-0" />
+                              <span>Отзыв без комментария</span>
                             </span>
                           )}
                         </div>
@@ -477,13 +496,15 @@ export default function MapsReviewsCenter() {
                             onClick={() => setSelectedReview(r)}
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300 hover:bg-violet-600/10"
+                            className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300 hover:bg-violet-600/10 flex items-center gap-1"
                           >
-                            Смотреть 👁️
+                            <Eye className="h-3.5 w-3.5" />
+                            Смотреть
                           </Button>
                           {r.reviewUrl && (
-                            <a href={r.reviewUrl} target="_blank" rel="noreferrer" className="text-[10px] text-slate-500 hover:text-slate-300 hover:underline">
-                              Открыть оригинал 🔗
+                            <a href={r.reviewUrl} target="_blank" rel="noreferrer" className="text-[10px] text-slate-500 hover:text-slate-300 hover:underline flex items-center gap-1">
+                              <ExternalLink className="h-2.5 w-2.5" />
+                              <span>Открыть оригинал</span>
                             </a>
                           )}
                         </div>
@@ -528,11 +549,13 @@ export default function MapsReviewsCenter() {
                   Автообновление (15с)
                 </label>
               </div>
-              <Button onClick={loadNewReviews} size="sm" variant="outline" className="border-slate-800 text-xs h-9 flex-1 sm:flex-initial">
-                🔄 Обновить
+              <Button onClick={loadNewReviews} size="sm" variant="outline" className="border-slate-800 text-xs h-9 flex-1 sm:flex-initial flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" />
+                Обновить
               </Button>
-              <Button onClick={markAllAsRead} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-9 flex-1 sm:flex-initial">
-                ✓ Прочитать все
+              <Button onClick={markAllAsRead} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-9 flex-1 sm:flex-initial flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Прочитать все
               </Button>
             </div>
           </div>
@@ -541,8 +564,8 @@ export default function MapsReviewsCenter() {
             {newLoading && newReviews.length === 0 ? (
               <div className="text-center p-8 text-slate-500">Загрузка...</div>
             ) : newReviews.length === 0 ? (
-              <div className="text-center p-12 border border-slate-900 rounded-3xl text-slate-500">
-                <div className="text-2xl mb-2">🎉</div>
+              <div className="text-center p-12 border border-slate-900/60 rounded-3xl text-slate-500 flex flex-col items-center justify-center bg-slate-950/20">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-2.5" />
                 <div className="text-xs">Все новые отзывы прочитаны. Новых отзывов нет.</div>
               </div>
             ) : (
@@ -552,15 +575,16 @@ export default function MapsReviewsCenter() {
                   return (
                     <Card
                       key={r.id}
-                      className={`border-slate-800 bg-slate-900/20 text-slate-100 hover:border-slate-700 transition duration-200 ${
+                      className={`border-slate-800/80 bg-slate-900/35 text-slate-100 hover:border-slate-700/60 hover:bg-slate-900/50 transition-all duration-300 shadow-sm shadow-violet-950/5 ${
                         isNegative ? "border-l-4 border-l-red-500 bg-red-500/[0.02]" : ""
                       }`}
                     >
                       <CardHeader className="p-4 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 space-y-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-xs text-white">{r.author}</span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold ${getRatingBg(r.rating)}`}>
-                            {getStarEmoji(r.rating)}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(r.rating)}`}>
+                            <Star className="h-3 w-3 fill-current shrink-0" />
+                            <span>{r.rating.toFixed(1)}</span>
                           </span>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-semibold ${getSourceColor(r.source)}`}>
                             {getSourceLabel(r.source)}
@@ -576,13 +600,15 @@ export default function MapsReviewsCenter() {
                             </span>
                           )}
                           {r.aiTopics && r.aiTopics.split(", ").filter(Boolean).map((t, idx) => (
-                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
-                              🏷️ {t}
+                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
+                              <Tag className="h-2.5 w-2.5 shrink-0" />
+                              <span>{t}</span>
                             </span>
                           ))}
                           {r.replyText && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold">
-                              ✓ Отвечено
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-semibold">
+                              <Check className="h-2.5 w-2.5 shrink-0" />
+                              <span>Отвечено</span>
                             </span>
                           )}
                         </div>
@@ -594,9 +620,10 @@ export default function MapsReviewsCenter() {
                             onClick={() => markAsRead(r.id)}
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-[10px] bg-slate-800 text-slate-300 hover:text-white"
+                            className="h-6 px-2 text-[10px] bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1"
                           >
-                            ✓ Прочит.
+                            <Check className="h-3 w-3" />
+                            <span>Прочит.</span>
                           </Button>
                         </div>
                       </CardHeader>
@@ -613,19 +640,21 @@ export default function MapsReviewsCenter() {
                                 </span>
                               ))
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                                💬 Есть отзыв
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                <MessageSquare className="h-3 w-3 shrink-0" />
+                                <span>Есть отзыв</span>
                               </span>
                             )
                           ) : (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
                               r.rating >= 4 
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
                                 : r.rating === 3 
-                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
-                                : "bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse"
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                                : "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse"
                             }`}>
-                              Отзыв без комментария 💬
+                              <MessageSquareOff className="h-3 w-3 shrink-0" />
+                              <span>Отзыв без комментария</span>
                             </span>
                           )}
                         </div>
@@ -634,13 +663,15 @@ export default function MapsReviewsCenter() {
                             onClick={() => setSelectedReview(r)}
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300 hover:bg-violet-600/10"
+                            className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300 hover:bg-violet-600/10 flex items-center gap-1"
                           >
-                            Смотреть 👁️
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Смотреть</span>
                           </Button>
                           {r.reviewUrl && (
-                            <a href={r.reviewUrl} target="_blank" rel="noreferrer" className="text-[10px] text-slate-500 hover:text-slate-300 hover:underline">
-                              Открыть оригинал 🔗
+                            <a href={r.reviewUrl} target="_blank" rel="noreferrer" className="text-[10px] text-slate-500 hover:text-slate-300 hover:underline flex items-center gap-1">
+                              <ExternalLink className="h-2.5 w-2.5" />
+                              <span>Открыть оригинал</span>
                             </a>
                           )}
                         </div>
@@ -661,8 +692,9 @@ export default function MapsReviewsCenter() {
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 Детали отзыва
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(selectedReview.rating)}`}>
-                  {getStarEmoji(selectedReview.rating)}
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-semibold ${getRatingBg(selectedReview.rating)}`}>
+                  <Star className="h-3 w-3 fill-current shrink-0" />
+                  <span>{selectedReview.rating.toFixed(1)}</span>
                 </span>
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -685,18 +717,28 @@ export default function MapsReviewsCenter() {
               <div className="space-y-1">
                 <p className="text-[10px] uppercase font-semibold text-slate-500">ИИ Анализ отзыва</p>
                 <div className="flex flex-wrap gap-2 p-2.5 bg-slate-950 rounded-xl border border-slate-900/60">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold ${
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold gap-1 ${
                     (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" 
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
                       : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" 
                       ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
                       : "bg-red-500/10 text-red-400 border-red-500/20"
                   }`}>
-                    Тональность: {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? "Положительный 🟢" : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? "Нейтральный 🟡" : "Негативный 🔴"}
+                    {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? (
+                      <ThumbsUp className="h-3 w-3" />
+                    ) : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? (
+                      <Star className="h-3 w-3 text-amber-450" />
+                    ) : (
+                      <ThumbsDown className="h-3 w-3" />
+                    )}
+                    <span>
+                      Тональность: {(selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "POSITIVE" ? "Положительный" : (selectedReview.aiSentiment || (selectedReview.rating >= 4 ? "POSITIVE" : selectedReview.rating === 3 ? "NEUTRAL" : "NEGATIVE")) === "NEUTRAL" ? "Нейтральный" : "Негативный"}
+                    </span>
                   </span>
                   {selectedReview.aiTopics ? selectedReview.aiTopics.split(", ").filter(Boolean).map((topic: string, idx: number) => (
-                    <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium">
-                      🏷️ {topic}
+                    <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-violet-500/20 bg-violet-600/15 text-violet-400 text-[9px] font-medium gap-1">
+                      <Tag className="h-2.5 w-2.5 text-slate-500 shrink-0" />
+                      <span>{topic}</span>
                     </span>
                   )) : (
                     <span className="text-[10px] text-slate-500 italic">Темы не определены</span>
@@ -725,14 +767,15 @@ export default function MapsReviewsCenter() {
                 <p className="text-[10px] uppercase font-semibold text-slate-500 mb-1">Текст отзыва</p>
                 <div className="p-4 bg-slate-950 rounded-xl text-slate-300 leading-relaxed max-h-36 overflow-y-auto italic">
                   {selectedReview.text ? `"${selectedReview.text}"` : (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold gap-1 ${
                       selectedReview.rating >= 4 
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
                         : selectedReview.rating === 3 
                         ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
-                        : "bg-red-500/10 text-red-400 border-red-500/20 animate-pulse"
+                        : "bg-red-500/10 text-red-400 border-red-500/20"
                     }`}>
-                      Отзыв без комментария 💬
+                      <MessageSquareOff className="h-3 w-3" />
+                      <span>Отзыв без комментария</span>
                     </span>
                   )}
                 </div>
@@ -757,9 +800,10 @@ export default function MapsReviewsCenter() {
                         onClick={handleGenerateReply}
                         disabled={generatingReply}
                         variant="outline"
-                        className="h-8 border-violet-800 text-[10px] text-violet-400 hover:bg-violet-600/10 flex-1"
+                        className="h-8 border-violet-800 text-[10px] text-violet-400 hover:bg-violet-600/10 flex-1 flex items-center justify-center gap-1.5"
                       >
-                        {generatingReply ? "Генерация ответа..." : "📝 Сгенерировать ответ по шаблону"}
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>{generatingReply ? "Генерация ответа..." : "Сгенерировать ответ по шаблону"}</span>
                       </Button>
                     </div>
 
@@ -792,9 +836,10 @@ export default function MapsReviewsCenter() {
                     <Button
                       onClick={handleSubmitReply}
                       disabled={submittingReply || !replyText.trim()}
-                      className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs h-9 font-bold rounded-lg"
+                      className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs h-9 font-bold rounded-lg flex items-center justify-center gap-1"
                     >
-                      {submittingReply ? "Сохранение ответа..." : "Сохранить и отправить ответ ✓"}
+                      <span>{submittingReply ? "Сохранение ответа..." : "Сохранить и отправить ответ"}</span>
+                      <Check className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
