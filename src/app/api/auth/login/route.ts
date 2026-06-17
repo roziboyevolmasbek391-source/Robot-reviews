@@ -3,16 +3,38 @@ import { getIronSession } from "iron-session";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { sessionOptions, SessionData } from "@/lib/session";
+import { createSession } from "@/lib/security/session";
+
+function redirectTo(path: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: {
+      Location: path,
+    },
+  });
+}
+
+function errorResponse(req: NextRequest, message: string, status: number, isJsonRequest: boolean) {
+  if (isJsonRequest) {
+    return NextResponse.json({ error: message }, { status });
+  }
+
+  return redirectTo(`/login?error=${encodeURIComponent(message)}`);
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, password } = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    const isJsonRequest = contentType.includes("application/json");
+    const payload = isJsonRequest
+      ? await req.json()
+      : Object.fromEntries((await req.formData()).entries());
+
+    const username = String(payload.username || "").trim();
+    const password = String(payload.password || "");
 
     if (!username || !password) {
-      return NextResponse.json(
-        { error: "Foydalanuvchi nomi va parol kiritilishi shart" },
-        { status: 400 }
-      );
+      return errorResponse(req, "Введите имя пользователя и пароль", 400, isJsonRequest);
     }
 
     const user = await prisma.user.findUnique({
@@ -20,51 +42,52 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user || !user.isActive) {
-      return NextResponse.json(
-        { error: "Foydalanuvchi topilmadi yoki faolsizlantirilgan" },
-        { status: 401 }
-      );
+      return errorResponse(req, "Пользователь не найден или отключен", 401, isJsonRequest);
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      return NextResponse.json(
-        { error: "Parol noto'g'ri" },
-        { status: 401 }
-      );
+      return errorResponse(req, "Неверный пароль", 401, isJsonRequest);
     }
 
-    // Sessiya yaratish
     const res = new NextResponse();
     const session = await getIronSession<SessionData>(req, res, sessionOptions);
 
     session.user = {
       id: user.id,
-      username: user.username,
-      fullName: user.fullName,
+      username: user.username || "",
+      fullName: user.fullName || "User",
       role: user.role,
     };
     session.isLoggedIn = true;
     await session.save();
 
-    // Sessiya cookie-sini response'ga qo'shish
-    const cookieHeader = res.headers.get("set-cookie");
-    const response = NextResponse.json({
-      success: true,
-      user: {
-        username: user.username,
-        fullName: user.fullName,
-        role: user.role,
-      },
+    await createSession({
+      id: user.id,
+      email: user.email || "",
+      name: user.name || user.fullName || user.username || "User",
+      role: user.role,
     });
 
+    const cookieHeader = res.headers.get("set-cookie");
+    const response = isJsonRequest
+      ? NextResponse.json({
+          success: true,
+          user: {
+            username: user.username || "",
+            fullName: user.fullName,
+            role: user.role,
+          },
+        })
+      : redirectTo("/dashboard");
+
     if (cookieHeader) {
-      response.headers.set("set-cookie", cookieHeader);
+      response.headers.append("set-cookie", cookieHeader);
     }
 
     return response;
   } catch (error) {
-    console.error("Login xatosi:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    console.error("Login error:", error);
+    return NextResponse.json({ error: "На сервере произошла ошибка" }, { status: 500 });
   }
 }

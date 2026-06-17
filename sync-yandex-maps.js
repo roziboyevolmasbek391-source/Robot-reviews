@@ -2,7 +2,7 @@ const { PrismaClient, ReviewSource } = require("@prisma/client");
 const puppeteer = require("puppeteer");
 const path = require("path");
 const fs = require("fs");
-const { saveAndAlertReview } = require("./src/lib/sync-helper");
+const { saveAndAlertReview, updateReviewIfChanged } = require("./src/lib/sync-helper");
 
 // Load environment variables from .env file
 const envPath = path.join(__dirname, ".env");
@@ -28,6 +28,15 @@ const months = {
   "января": 0, "февраля": 1, "марта": 2, "апреля": 3, "мая": 4, "июня": 5,
   "июля": 6, "августа": 7, "сентября": 8, "октября": 9, "ноября": 10, "декабря": 11
 };
+
+function cleanReviewText(text) {
+  if (!text) return "";
+  return text.toLowerCase()
+    .replace(/[^a-z0-9а-яё]/g, "")
+    .replace(/читатьдалее/g, "")
+    .replace(/читатьполностью/g, "")
+    .replace(/readmore/g, "");
+}
 
 function parseRussianDate(dateStr) {
   if (!dateStr) return new Date();
@@ -329,7 +338,7 @@ async function main() {
           let dupCount = 0;
 
           for (const rawReview of reviews) {
-            const exists = await prisma.review.findUnique({
+            let exists = await prisma.review.findUnique({
               where: {
                 source_externalReviewId: {
                   source: ReviewSource.YANDEX_MAPS,
@@ -338,8 +347,67 @@ async function main() {
               }
             });
 
+            // Fallback duplicate check for Yandex Maps reviews (truncated widget text vs full cabinet text)
+            if (!exists) {
+              const baseDate = new Date(rawReview.reviewDate);
+              const rangeStart = new Date(baseDate);
+              rangeStart.setDate(rangeStart.getDate() - 14);
+              const rangeEnd = new Date(baseDate);
+              rangeEnd.setDate(rangeEnd.getDate() + 14);
+
+              const candidates = await prisma.review.findMany({
+                where: {
+                  source: ReviewSource.YANDEX_MAPS,
+                  branchId: branch.id,
+                  author: rawReview.author || "Anonim",
+                  rating: rawReview.rating,
+                  reviewDate: {
+                    gte: rangeStart,
+                    lte: rangeEnd
+                  }
+                }
+              });
+
+              if (candidates.length > 0) {
+                const rawNorm = cleanReviewText(rawReview.text);
+                for (const cand of candidates) {
+                  const candNorm = cleanReviewText(cand.text);
+                  if (rawNorm === candNorm || (rawNorm !== "" && candNorm !== "" && (rawNorm.includes(candNorm) || candNorm.includes(rawNorm)))) {
+                    exists = cand;
+                    console.log(`  -> [sync-yandex-maps] Fuzzy matched existing review in DB: ID=${cand.id}, Author="${cand.author}"`);
+                    break;
+                  }
+                }
+              }
+            }
+
             if (exists) {
-              dupCount++;
+              const rawText = rawReview.text || "";
+              const existingText = exists.text || "";
+              const bestText = rawText.length > existingText.length ? rawText : existingText;
+
+              const hasReplyTextDiff = rawReview.replyText !== exists.replyText;
+              const hasTextDiff = bestText !== exists.text;
+              const hasRatingDiff = rawReview.rating !== exists.rating;
+              const hasHashDiff = rawReview.externalReviewId !== exists.externalReviewId;
+
+              if (hasReplyTextDiff || hasTextDiff || hasRatingDiff || hasHashDiff) {
+                console.log(`  -> [sync-yandex-maps] Updating existing review ${exists.id}: ReplyTextDiff=${hasReplyTextDiff}, TextDiff=${hasTextDiff}, RatingDiff=${hasRatingDiff}, HashDiff=${hasHashDiff}`);
+                await prisma.review.update({
+                  where: { id: exists.id },
+                  data: {
+                    externalReviewId: rawReview.externalReviewId,
+                    replyText: rawReview.replyText || exists.replyText || null,
+                    repliedAt: rawReview.repliedAt || exists.repliedAt || (rawReview.replyText ? new Date() : null),
+                    text: bestText || null,
+                    rating: rawReview.rating,
+                    isNew: rawReview.replyText ? false : exists.isNew
+                  }
+                });
+                newCount++;
+              } else {
+                dupCount++;
+              }
               continue;
             }
 

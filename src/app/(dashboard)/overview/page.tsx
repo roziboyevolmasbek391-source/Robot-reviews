@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getRatingColor, getSourceColor } from "@/lib/utils";
@@ -10,7 +11,7 @@ import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { MessageSquare, Star, ThumbsUp, ThumbsDown, Calendar as CalendarIcon, Lightbulb, Building2 } from "lucide-react";
+import { MessageSquare, Star, ThumbsUp, ThumbsDown, Calendar as CalendarIcon, Lightbulb, Building2, Search } from "lucide-react";
 
 import {
   ResponsiveContainer,
@@ -39,6 +40,7 @@ interface StatsData {
     reviewsThisMonth: number;
     responseRate: number;
     averageResponseTimeMs: number;
+    totalSearches: number;
   };
   charts: {
     platformDistribution: Array<{ name: string; value: number; key: string }>;
@@ -515,7 +517,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Global Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Card 1: Jami sharhlar */}
         <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -528,7 +530,21 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        {/* Card 2: O'rtacha reyting */}
+        {/* Card 2: Brand searches (Mazzali) */}
+        <Link href="/search-analytics" className="block group">
+          <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-305 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-pointer h-full group">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Поиски бренда</CardTitle>
+              <Search className="h-4.5 w-4.5 text-blue-400 group-hover:scale-110 transition-transform" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white tracking-tight">{(data.summary.totalSearches || 0).toLocaleString()}</div>
+              <p className="text-xs text-slate-500 mt-1">Во всех агрегаторах →</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Card 3: O'rtacha reyting */}
         <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Средний рейтинг</CardTitle>
@@ -542,7 +558,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        {/* Card 3: Ijobiy sharhlar */}
+        {/* Card 4: Ijobiy sharhlar */}
         <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Положительные</CardTitle>
@@ -556,7 +572,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        {/* Card 4: Salbiy sharhlar */}
+        {/* Card 5: Salbiy sharhlar */}
         <Card className="border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-300 shadow-md shadow-violet-950/2 hover:-translate-y-[2px] cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Негативные</CardTitle>

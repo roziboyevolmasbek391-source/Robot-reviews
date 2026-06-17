@@ -55,4 +55,8 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+function buttonClassName(props?: VariantProps<typeof buttonVariants>) {
+  return buttonVariants(props);
+}
+
+export { Button, buttonVariants, buttonClassName }

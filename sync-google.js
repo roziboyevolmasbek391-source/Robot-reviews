@@ -1,7 +1,7 @@
 const { PrismaClient, ReviewSource } = require("@prisma/client");
 const path = require("path");
 const fs = require("fs");
-const { saveAndAlertReview } = require("./src/lib/sync-helper");
+const { saveAndAlertReview, updateReviewIfChanged } = require("./src/lib/sync-helper");
 
 // Load environment variables from .env file
 const envPath = path.join(__dirname, ".env");
@@ -99,7 +99,9 @@ async function fetchGoogleReviews(branchPlatformId, accessToken, limit = 20) {
       rating,
       text: r.comment || null,
       reviewUrl: r.reviewUrl || `https://maps.google.com/review?id=${branchPlatformId}`,
-      reviewDate
+      reviewDate,
+      replyText: r.reviewReply?.comment || null,
+      repliedAt: r.reviewReply?.updateTime ? new Date(r.reviewReply.updateTime) : null
     };
   });
 }
@@ -200,7 +202,7 @@ async function main() {
       let dupCount = 0;
 
       for (const rawReview of reviews) {
-        const exists = await prisma.review.findUnique({
+        let exists = await prisma.review.findUnique({
           where: {
             source_externalReviewId: {
               source: ReviewSource.GOOGLE_MAPS,
@@ -209,8 +211,65 @@ async function main() {
           }
         });
 
+        // Fallback duplicate check for Google Maps reviews (truncated vs full text)
+        if (!exists) {
+          const sameDay = new Date(rawReview.reviewDate);
+          const startOfDay = new Date(sameDay.getFullYear(), sameDay.getMonth(), sameDay.getDate(), 0, 0, 0);
+          const endOfDay = new Date(sameDay.getFullYear(), sameDay.getMonth(), sameDay.getDate(), 23, 59, 59);
+
+          const candidates = await prisma.review.findMany({
+            where: {
+              source: ReviewSource.GOOGLE_MAPS,
+              branchId: branch.id,
+              author: rawReview.author || "Anonim",
+              rating: rawReview.rating,
+              reviewDate: {
+                gte: startOfDay,
+                lte: endOfDay
+              }
+            }
+          });
+
+          if (candidates.length > 0) {
+            const rawNorm = (rawReview.text || "").toLowerCase().replace(/[^a-z0-9а-яё]/g, "");
+            for (const cand of candidates) {
+              const candNorm = (cand.text || "").toLowerCase().replace(/[^a-z0-9а-яё]/g, "");
+              if (rawNorm === candNorm || rawNorm.includes(candNorm) || candNorm.includes(rawNorm)) {
+                exists = cand;
+                console.log(`  -> [sync-google] Fuzzy matched existing review in DB: ID=${cand.id}, Author="${cand.author}"`);
+                break;
+              }
+            }
+          }
+        }
+
         if (exists) {
-          dupCount++;
+          const rawText = rawReview.text || "";
+          const existingText = exists.text || "";
+          const bestText = rawText.length > existingText.length ? rawText : existingText;
+
+          const hasReplyTextDiff = rawReview.replyText !== exists.replyText;
+          const hasTextDiff = bestText !== exists.text;
+          const hasRatingDiff = rawReview.rating !== exists.rating;
+          const hasHashDiff = rawReview.externalReviewId !== exists.externalReviewId;
+
+          if (hasReplyTextDiff || hasTextDiff || hasRatingDiff || hasHashDiff) {
+            console.log(`  -> [sync-google] Updating existing review ${exists.id}: ReplyTextDiff=${hasReplyTextDiff}, TextDiff=${hasTextDiff}, RatingDiff=${hasRatingDiff}, HashDiff=${hasHashDiff}`);
+            await prisma.review.update({
+              where: { id: exists.id },
+              data: {
+                externalReviewId: rawReview.externalReviewId,
+                replyText: rawReview.replyText || exists.replyText || null,
+                repliedAt: rawReview.repliedAt || exists.repliedAt || (rawReview.replyText ? new Date() : null),
+                text: bestText || null,
+                rating: rawReview.rating,
+                isNew: rawReview.replyText ? false : exists.isNew
+              }
+            });
+            newCount++;
+          } else {
+            dupCount++;
+          }
           continue;
         }
 

@@ -131,28 +131,112 @@ export default function MapsReviewsCenter() {
     }
   };
 
+  // Step-by-step progress state
+  type StepStatus = "idle" | "loading" | "done" | "error";
+  const [stepDb, setStepDb] = useState<StepStatus>("idle");
+  const [stepMap, setStepMap] = useState<StepStatus>("idle");
+  const [mapErrorMsg, setMapErrorMsg] = useState("");
+  const [publishingPlatform, setPublishingPlatform] = useState("");
+
+  const resetSteps = () => {
+    setStepDb("idle");
+    setStepMap("idle");
+    setMapErrorMsg("");
+    setPublishingPlatform("");
+  };
+
   const handleSubmitReply = async () => {
-    if (!selectedReview || !replyText) return;
+    if (!selectedReview || !replyText.trim()) return;
     setSubmittingReply(true);
+    resetSteps();
+
+    const source = selectedReview.source;
+    const supportsMap = source === "GOOGLE_MAPS" || source === "YANDEX_MAPS" || source === "DGIS";
+    const platformLabel =
+      source === "GOOGLE_MAPS" ? "Google Maps" :
+      source === "YANDEX_MAPS" ? "Yandex Maps" :
+      source === "DGIS" ? "2GIS" : source;
+
+    setPublishingPlatform(platformLabel);
+
     try {
+      // ── QADAM 1: DB ga saqlash ──
+      setStepDb("loading");
       const res = await fetch("/api/reviews/reply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reviewId: selectedReview.id, replyText }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        const updated = data.review;
-        setReviews((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
-        setNewReviews((prev) => prev.filter((r) => r.id !== updated.id));
-        setSelectedReview((prev) => (prev ? { ...prev, ...updated } : null));
+
+      if (!res.ok) {
+        setStepDb("error");
+        const errData = await res.json().catch(() => ({}));
+        setMapErrorMsg(errData.error ?? "DB ga saqlashda xatolik");
+        return;
       }
-    } catch (e) {
-      console.error(e);
+
+      const data = await res.json();
+      const updated = data.review;
+      setStepDb("done");
+
+      // Reviews va newReviews listini yangilaymiz
+      // LEKIN selectedReview ni hali yangilamaymiz — progress panel ko'rinib tursin
+      // (map step tugaganda yangilaymiz)
+      setReviews((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+      setNewReviews((prev) => prev.filter((r) => r.id !== updated.id));
+
+      if (!supportsMap) {
+        setStepMap("error");
+        setMapErrorMsg(`${platformLabel} uchun xaritaga yuborish hali qo'shilmagan`);
+        return;
+      }
+
+      // ── QADAM 2: Xaritaga yuborish ──
+      setStepMap("loading");
+
+      fetch("/api/reviews/reply/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: selectedReview.id }),
+        signal: AbortSignal.timeout(120_000),
+      })
+        .then((r) => r.json())
+        .then((mapResult) => {
+          if (mapResult.success) {
+            setStepMap("done");
+          } else {
+            setStepMap("error");
+            setMapErrorMsg(mapResult.errorMessage ?? "Noma'lum xato");
+          }
+          // Faqat shu yerda selectedReview ni yangilaymiz (form yashiriladi)
+          setSelectedReview((prev) => (prev ? { ...prev, replyText: replyText } : null));
+        })
+        .catch((mapErr) => {
+          console.error("[Map Publish] error:", mapErr);
+          setStepMap("error");
+          setMapErrorMsg(mapErr?.message ?? "Brauzer yoki tarmoq xatoligi");
+          // Xatolikda ham replyText ni saqlaymiz
+          setSelectedReview((prev) => (prev ? { ...prev, replyText: replyText } : null));
+        });
+
+    } catch (e: any) {
+      console.error("[Reply] fetch error:", e);
+      setStepDb("error");
+      setMapErrorMsg(e.message ?? "Noma'lum xato");
     } finally {
       setSubmittingReply(false);
     }
   };
+
+
+
+  // Reset step states when selecting a new review
+  useEffect(() => {
+    resetSteps();
+    setReplyText("");
+    setSuggestedRu("");
+    setSuggestedUz("");
+  }, [selectedReview?.id]);
 
   // Filiallarni yuklash
   useEffect(() => {
@@ -784,8 +868,9 @@ export default function MapsReviewsCenter() {
               {/* Operator Reply & SLA Section */}
               <div className="border-t border-slate-900/60 pt-4 space-y-3">
                 <p className="text-[10px] uppercase font-semibold text-slate-500">Ответ оператора (SLA)</p>
-                
-                {selectedReview.replyText ? (
+
+                {/* Saqlangan javobni ko'rsatish */}
+                {selectedReview.replyText && stepMap !== "loading" && stepDb === "idle" ? (
                   <div className="p-4 bg-violet-600/5 border border-violet-500/10 rounded-xl space-y-2">
                     <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-900 pb-1.5 mb-1.5">
                       <span>Ответил: <b className="text-white">@{selectedReview.repliedBy}</b></span>
@@ -793,7 +878,8 @@ export default function MapsReviewsCenter() {
                     </div>
                     <p className="text-slate-300 italic text-xs leading-relaxed">"{selectedReview.replyText}"</p>
                   </div>
-                ) : (
+                ) : stepDb === "idle" ? (
+                  /* Javob yozish formasi */
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <Button
@@ -809,18 +895,10 @@ export default function MapsReviewsCenter() {
 
                     {suggestedRu && (
                       <div className="grid grid-cols-2 gap-2 p-2 bg-slate-950 rounded-lg border border-slate-900">
-                        <Button
-                          onClick={() => setReplyText(suggestedRu)}
-                          variant="ghost"
-                          className="h-7 text-[10px] text-slate-300 hover:text-white"
-                        >
+                        <Button onClick={() => setReplyText(suggestedRu)} variant="ghost" className="h-7 text-[10px] text-slate-300 hover:text-white">
                           Использовать RU
                         </Button>
-                        <Button
-                          onClick={() => setReplyText(suggestedUz)}
-                          variant="ghost"
-                          className="h-7 text-[10px] text-slate-300 hover:text-white"
-                        >
+                        <Button onClick={() => setReplyText(suggestedUz)} variant="ghost" className="h-7 text-[10px] text-slate-300 hover:text-white">
                           Использовать UZ
                         </Button>
                       </div>
@@ -836,11 +914,49 @@ export default function MapsReviewsCenter() {
                     <Button
                       onClick={handleSubmitReply}
                       disabled={submittingReply || !replyText.trim()}
-                      className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs h-9 font-bold rounded-lg flex items-center justify-center gap-1"
+                      className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs h-9 font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all"
                     >
-                      <span>{submittingReply ? "Сохранение ответа..." : "Сохранить и отправить ответ"}</span>
-                      <Check className="h-4 w-4" />
+                      {submittingReply ? (
+                        <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>Saqlanmoqda...</span></>
+                      ) : (
+                        <><Send className="h-3.5 w-3.5" /><span>Saqlash va xaritaga yuborish</span></>
+                      )}
                     </Button>
+                  </div>
+                ) : null}
+
+                {/* Progress paneli — doim ko'rinadigan, steplar idle bo'lmasa */}
+                {(stepDb !== "idle" || stepMap !== "idle") && (
+                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 space-y-2.5 text-xs mt-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Yuborish holati</p>
+
+                    {/* Qadam 1: DB */}
+                    <div className="flex items-center gap-2.5 py-1 px-2 rounded-lg bg-slate-900/50">
+                      {stepDb === "loading" && <RefreshCw className="h-4 w-4 animate-spin text-violet-400 shrink-0" />}
+                      {stepDb === "done"    && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
+                      {stepDb === "error"   && <span className="text-red-400 shrink-0 font-bold text-base leading-none">✕</span>}
+                      {stepDb === "idle"    && <span className="h-4 w-4 rounded-full border-2 border-slate-700 shrink-0" />}
+                      <span className={`flex-1 ${stepDb === "done" ? "text-emerald-300" : stepDb === "error" ? "text-red-300" : stepDb === "loading" ? "text-violet-300" : "text-slate-500"}`}>
+                        {stepDb === "idle"    && "1. DB ga saqlash"}
+                        {stepDb === "loading" && "1. Ma'lumotlar bazasiga saqlanmoqda..."}
+                        {stepDb === "done"    && "1. ✅ DB ga saqlandi"}
+                        {stepDb === "error"   && `1. ❌ Xatolik: ${mapErrorMsg}`}
+                      </span>
+                    </div>
+
+                    {/* Qadam 2: Xarita */}
+                    <div className="flex items-start gap-2.5 py-1 px-2 rounded-lg bg-slate-900/50">
+                      {stepMap === "loading" && <RefreshCw className="h-4 w-4 animate-spin text-violet-400 shrink-0 mt-0.5" />}
+                      {stepMap === "done"    && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />}
+                      {stepMap === "error"   && <span className="text-red-400 shrink-0 font-bold text-base leading-none mt-0.5">✕</span>}
+                      {stepMap === "idle"    && <span className="h-4 w-4 rounded-full border-2 border-slate-700 shrink-0 mt-0.5" />}
+                      <span className={`flex-1 leading-relaxed ${stepMap === "done" ? "text-emerald-300" : stepMap === "error" ? "text-red-300" : stepMap === "loading" ? "text-violet-300" : "text-slate-500"}`}>
+                        {stepMap === "idle"    && `2. ${publishingPlatform || "Xaritaga"} yuborish`}
+                        {stepMap === "loading" && `2. ${publishingPlatform} xaritasiga yuborilmoqda... (brauzer ochilmoqda, 1-2 daq)`}
+                        {stepMap === "done"    && `2. ✅ ${publishingPlatform} xaritasida chop etildi!`}
+                        {stepMap === "error"   && `2. ❌ ${publishingPlatform}: ${mapErrorMsg}`}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>

@@ -122,9 +122,12 @@ export class TelegramService {
       keyboard.url("Открыть оригинал 🔗", review.reviewUrl);
     }
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const telegramFriendlyAppUrl = appUrl.includes("localhost") || appUrl.includes("127.0.0.1")
+      ? appUrl.replace("localhost", "example.com").replace("127.0.0.1", "example.com")
+      : appUrl;
     const isVendor = review.source === "YANDEX_VENDOR" || review.source === "UZUM_VENDOR";
     const replyPath = isVendor ? "vendors" : "maps-reviews";
-    keyboard.url("Ответить в системе 🤖", `${appUrl}/${replyPath}?reviewId=${review.id}`);
+    keyboard.url("Ответить в системе 🤖", `${telegramFriendlyAppUrl}/${replyPath}?reviewId=${review.id}`);
 
     try {
       await this.bot.api.sendMessage(this.chatId, message, {

@@ -344,6 +344,111 @@ export async function GET(req: NextRequest) {
 
     const dailyStatsArray = Object.values(dailyStats);
 
+    // ==========================================
+    // BRAND SEARCH STATISTICS (NEW FEATURE)
+    // ==========================================
+    const searchWhere: any = {};
+    if (branchId) searchWhere.branchId = branchId;
+    if (source) searchWhere.source = source;
+
+    if (dateFromStr || dateToStr) {
+      searchWhere.date = {};
+      if (dateFromStr) {
+        searchWhere.date.gte = new Date(dateFromStr);
+      }
+      if (dateToStr) {
+        searchWhere.date.lte = new Date(dateToStr);
+      }
+    }
+
+    const searchStats = await prisma.searchStat.findMany({
+      where: searchWhere,
+      select: {
+        source: true,
+        query: true,
+        searchCount: true,
+        date: true,
+        branchId: true,
+        branch: {
+          select: { name: true }
+        }
+      }
+    });
+
+    const totalSearches = searchStats.reduce((acc, s) => acc + s.searchCount, 0);
+
+    const searchesByPlatformMap: Record<string, number> = {
+      GOOGLE_MAPS: 0,
+      YANDEX_MAPS: 0,
+      YANDEX_VENDOR: 0,
+      DGIS: 0,
+      UZUM_VENDOR: 0
+    };
+    searchStats.forEach(s => {
+      if (searchesByPlatformMap[s.source] !== undefined) {
+        searchesByPlatformMap[s.source] += s.searchCount;
+      }
+    });
+
+    const searchesByPlatform = Object.keys(searchesByPlatformMap).map(k => ({
+      name: k === "GOOGLE_MAPS" ? "Google Maps" : k === "YANDEX_MAPS" ? "Yandex Maps" : k === "YANDEX_VENDOR" ? "Yandex Vendor" : k === "UZUM_VENDOR" ? "Uzum Vendor" : "2GIS",
+      value: searchesByPlatformMap[k],
+      key: k
+    }));
+
+    const searchesByQueryMap: Record<string, number> = {};
+    searchStats.forEach(s => {
+      searchesByQueryMap[s.query] = (searchesByQueryMap[s.query] || 0) + s.searchCount;
+    });
+    const searchesByQuery = Object.keys(searchesByQueryMap).map(k => ({
+      name: k,
+      value: searchesByQueryMap[k]
+    })).sort((a, b) => b.value - a.value);
+
+    // Group searches by branch
+    const searchesByBranchMap: Record<string, { id: string, name: string, value: number }> = {};
+    searchStats.forEach(s => {
+      const bId = s.branchId;
+      const bName = s.branch?.name || "Неизвестный филиал";
+      if (!searchesByBranchMap[bId]) {
+        searchesByBranchMap[bId] = { id: bId, name: bName, value: 0 };
+      }
+      searchesByBranchMap[bId].value += s.searchCount;
+    });
+    const searchesByBranch = Object.values(searchesByBranchMap).sort((a, b) => b.value - a.value);
+
+    const searchesTimelineMap: Record<string, {
+      date: string;
+      count: number;
+      GOOGLE_MAPS: number;
+      YANDEX_MAPS: number;
+      YANDEX_VENDOR: number;
+      DGIS: number;
+      UZUM_VENDOR: number;
+    }> = {};
+
+    Object.keys(dailyStats).forEach(key => {
+      searchesTimelineMap[key] = {
+        date: dailyStats[key].date,
+        count: 0,
+        GOOGLE_MAPS: 0,
+        YANDEX_MAPS: 0,
+        YANDEX_VENDOR: 0,
+        DGIS: 0,
+        UZUM_VENDOR: 0
+      };
+    });
+
+    searchStats.forEach(s => {
+      const dateKey = new Date(s.date).toDateString();
+      if (searchesTimelineMap[dateKey]) {
+        searchesTimelineMap[dateKey].count += s.searchCount;
+        searchesTimelineMap[dateKey][s.source] += s.searchCount;
+      }
+    });
+
+    const searchesTimeline = Object.values(searchesTimelineMap);
+
     return NextResponse.json({
       summary: {
         totalReviews,
@@ -356,6 +461,7 @@ export async function GET(req: NextRequest) {
         reviewsThisMonth,
         responseRate,
         averageResponseTimeMs,
+        totalSearches,
       },
       charts: {
         platformDistribution: Object.keys(platformDistribution).map(k => ({
@@ -363,7 +469,7 @@ export async function GET(req: NextRequest) {
           value: platformDistribution[k],
           key: k,
         })),
-        branchDistribution: branchStats, // Barcha filiallar
+        branchDistribution: branchStats,
         ratingDistribution: Object.keys(ratingDistribution).map(k => ({
           stars: `${k} ⭐`,
           count: ratingDistribution[parseInt(k)],
@@ -372,6 +478,10 @@ export async function GET(req: NextRequest) {
         dailyStats: dailyStatsArray,
         topicDistribution: topicDistributionArray,
         topicDistributionByBranch,
+        searchesByPlatform,
+        searchesByQuery,
+        searchesTimeline,
+        searchesByBranch
       }
     });
 

@@ -11,6 +11,15 @@ import { telegramService } from "@/features/notifications/services/telegram.serv
 import { NormalizedReview } from "@/connectors/base.connector";
 import { analyzeReview } from "@/lib/ai-analyzer";
 
+function cleanReviewText(text: string | null): string {
+  if (!text) return "";
+  return text.toLowerCase()
+    .replace(/[^a-z0-9а-яё]/g, "")
+    .replace(/читатьдалее/g, "")
+    .replace(/читатьполностью/g, "")
+    .replace(/readmore/g, "");
+}
+
 export class SyncService {
   /**
    * Ma'lum bir manba va filial uchun sinxronizatsiyani amalga oshirish
@@ -81,22 +90,7 @@ export class SyncService {
 
       for (const rawReview of reviews) {
         try {
-          // Dublikatlikni tekshirish
-          const existing = await prisma.review.findUnique({
-            where: {
-              source_externalReviewId: {
-                source,
-                externalReviewId: rawReview.externalReviewId,
-              },
-            },
-          });
-
-          if (existing) {
-            duplicatesCount++;
-            continue;
-          }
-
-          // Dinamik ravishda sharh tegishli bo'lgan filialni aniqlaymiz
+          // 1. Dinamik ravishda sharh tegishli bo'lgan filialni aniqlaymiz
           let targetBranchId = branchId;
           let targetBranchName = branch.name;
 
@@ -120,6 +114,80 @@ export class SyncService {
               targetBranchId = mappedPlatform.branch.id;
               targetBranchName = mappedPlatform.branch.name;
             }
+          }
+
+          // 2. Dublikatlikni tekshirish (aniq ID bo'yicha)
+          let existing = await prisma.review.findUnique({
+            where: {
+              source_externalReviewId: {
+                source,
+                externalReviewId: rawReview.externalReviewId,
+              },
+            },
+          });
+
+          // Fallback duplicate check for map reviews (truncated widget text vs full cabinet text)
+          if (!existing && (source === ReviewSource.YANDEX_MAPS || source === ReviewSource.GOOGLE_MAPS)) {
+            const baseDate = new Date(rawReview.reviewDate);
+            const rangeStart = new Date(baseDate);
+            rangeStart.setDate(rangeStart.getDate() - 14);
+            const rangeEnd = new Date(baseDate);
+            rangeEnd.setDate(rangeEnd.getDate() + 14);
+
+            const candidates = await prisma.review.findMany({
+              where: {
+                source,
+                branchId: targetBranchId,
+                author: rawReview.author || "Anonim",
+                rating: rawReview.rating,
+                reviewDate: {
+                  gte: rangeStart,
+                  lte: rangeEnd
+                }
+              }
+            });
+
+            if (candidates.length > 0) {
+              const rawNorm = cleanReviewText(rawReview.text);
+              for (const cand of candidates) {
+                const candNorm = cleanReviewText(cand.text);
+                if (rawNorm === candNorm || (rawNorm !== "" && candNorm !== "" && (rawNorm.includes(candNorm) || candNorm.includes(rawNorm)))) {
+                  existing = cand;
+                  console.log(`[SyncService] Fuzzy matched existing review in DB: ID=${cand.id}, Author="${cand.author}"`);
+                  break;
+                }
+              }
+            }
+          }
+
+          if (existing) {
+            const rawText = rawReview.text || "";
+            const existingText = existing.text || "";
+            const bestText = rawText.length > existingText.length ? rawText : existingText;
+
+            const hasReplyTextDiff = rawReview.replyText !== existing.replyText;
+            const hasTextDiff = bestText !== existing.text;
+            const hasRatingDiff = rawReview.rating !== existing.rating;
+            const hasHashDiff = rawReview.externalReviewId !== existing.externalReviewId;
+
+            if (hasReplyTextDiff || hasTextDiff || hasRatingDiff || hasHashDiff) {
+              console.log(`[SyncService] Updating existing review ${existing.id}: ReplyTextDiff=${hasReplyTextDiff}, TextDiff=${hasTextDiff}, RatingDiff=${hasRatingDiff}, HashDiff=${hasHashDiff}`);
+              await prisma.review.update({
+                where: { id: existing.id },
+                data: {
+                  externalReviewId: rawReview.externalReviewId,
+                  replyText: rawReview.replyText || existing.replyText || null,
+                  repliedAt: rawReview.repliedAt || existing.repliedAt || (rawReview.replyText ? new Date() : null),
+                  text: bestText || null,
+                  rating: rawReview.rating,
+                  isNew: rawReview.replyText ? false : existing.isNew,
+                },
+              });
+              syncedCount++;
+            } else {
+              duplicatesCount++;
+            }
+            continue;
           }
 
           // Run AI Sentiment & Topic analysis
@@ -257,9 +325,9 @@ export class SyncService {
         const clientSecretSetting = await prisma.systemSetting.findUnique({ where: { key: SYSTEM_SETTING_KEYS.GOOGLE_CLIENT_SECRET } });
         const refreshTokenSetting = await prisma.systemSetting.findUnique({ where: { key: SYSTEM_SETTING_KEYS.GOOGLE_REFRESH_TOKEN } });
 
-        const clientId = clientIdSetting?.value ? decrypt(clientIdSetting.value) : "";
-        const clientSecret = clientSecretSetting?.value ? decrypt(clientSecretSetting.value) : "";
-        const refreshToken = refreshTokenSetting?.value ? decrypt(refreshTokenSetting.value) : "";
+        const clientId = clientIdSetting?.value ? decrypt(clientIdSetting.value) : (process.env.GOOGLE_CLIENT_ID || "");
+        const clientSecret = clientSecretSetting?.value ? decrypt(clientSecretSetting.value) : (process.env.GOOGLE_CLIENT_SECRET || "");
+        const refreshToken = refreshTokenSetting?.value ? decrypt(refreshTokenSetting.value) : (process.env.GOOGLE_REFRESH_TOKEN || "");
 
         return new GoogleReviewsConnector({ clientId, clientSecret, refreshToken });
       }

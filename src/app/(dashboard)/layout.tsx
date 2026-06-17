@@ -16,7 +16,13 @@ import {
   Settings,
   FileText,
   MessageSquareMore,
-  LogOut
+  LogOut,
+  Briefcase,
+  Globe,
+  Send,
+  Bot,
+  Zap,
+  Search
 } from "lucide-react";
 
 interface User {
@@ -80,9 +86,16 @@ export default function DashboardLayout({
 
   const navItems = [
     { href: "/overview", label: "Обзор дашборда", icon: LayoutDashboard },
+    { href: "/search-analytics", label: "Аналитика поиска", icon: Search },
     { href: "/vendors", label: "Службы доставки", icon: Truck },
     { href: "/maps-reviews", label: "Центр отзывов карт", icon: Map },
     { href: "/admin/branches", label: "Филиалы", icon: Building2 },
+  ];
+
+  const publisherItems = [
+    { href: "/dashboard", label: "Publisher обзор", icon: Bot },
+    { href: "/branches", label: "Бизнес профили", icon: Briefcase },
+    { href: "/automations", label: "Автоматизация", icon: Zap },
   ];
 
   const adminItems = [
@@ -91,28 +104,29 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="dark flex h-screen w-screen bg-slate-950 font-sans text-slate-100 overflow-hidden relative bg-grid-pattern">
+    <div className="dark flex h-screen w-screen font-sans text-slate-100 overflow-hidden relative dashboard-bg bg-grid-pattern">
       {/* Background ambient glows */}
       <div className="ambient-glow-top" />
       <div className="ambient-glow-bottom" />
+      <div className="ambient-glow-mid" />
 
       {/* Mobile Sidebar Backdrop Overlay */}
       {isMobileSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-40 md:hidden"
+          className="fixed inset-0 bg-indigo-950/70 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-900 bg-slate-950 flex flex-col h-full shrink-0 transition-all duration-300 transform md:relative md:translate-x-0 md:bg-slate-900/40 md:backdrop-blur-xl ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-white/5 flex flex-col h-full shrink-0 transition-all duration-300 transform md:relative md:translate-x-0 sidebar-gradient md:backdrop-blur-xl ${
         isSidebarCollapsed ? "md:w-16" : "md:w-64"
       } ${
         isMobileSidebarOpen 
           ? "translate-x-0 visible pointer-events-auto" 
           : "-translate-x-full invisible md:visible pointer-events-none md:pointer-events-auto"
       }`}>
-        <div className={`h-16 flex items-center px-6 border-b border-slate-900 shrink-0 ${
+        <div className={`h-16 flex items-center px-6 border-b border-white/5 shrink-0 ${
           isSidebarCollapsed ? "md:px-4 md:justify-center" : "justify-between"
         }`}>
           <div className="flex items-center gap-2 overflow-hidden">
@@ -161,6 +175,33 @@ export default function DashboardLayout({
             })}
           </div>
 
+          {/* Publisher Robot */}
+          <div className="space-y-1">
+            <p className={`px-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 transition-all ${
+              isSidebarCollapsed ? "md:hidden" : "block"
+            }`}>Publisher Robot</p>
+            {publisherItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link key={item.href} href={item.href}>
+                  <span className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition duration-200 gap-3 border ${
+                    isActive 
+                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/20 shadow-sm shadow-emerald-900/20" 
+                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200 border-transparent hover:border-white/10"
+                  } ${
+                    isSidebarCollapsed ? "md:justify-center md:px-2" : ""
+                  }`} title={isSidebarCollapsed ? item.label : undefined}>
+                    <IconComponent className="h-4 w-4 shrink-0" />
+                    <span className={`transition-all duration-200 ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
+                      {item.label}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
           {/* Admin Items (Faqat ADMIN uchun) */}
           {user?.role === "ADMIN" && (
             <div className="space-y-1">
@@ -173,9 +214,9 @@ export default function DashboardLayout({
                 return (
                   <Link key={item.href} href={item.href}>
                     <span className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition duration-200 gap-3 border ${
-                      isActive 
-                        ? "bg-violet-600/10 text-violet-400 border-violet-500/10 shadow-sm shadow-violet-950/10" 
-                        : "text-slate-400 hover:bg-slate-900/40 hover:text-white border-transparent hover:border-slate-800/40"
+                        isActive 
+                        ? "bg-violet-500/15 text-violet-300 border-violet-400/20 shadow-sm shadow-violet-900/20" 
+                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200 border-transparent hover:border-white/10"
                     } ${
                       isSidebarCollapsed ? "md:justify-center md:px-2" : ""
                     }`} title={isSidebarCollapsed ? item.label : undefined}>
@@ -192,7 +233,7 @@ export default function DashboardLayout({
         </nav>
 
         {/* Footer / User Profile */}
-        <div className={`p-4 border-t border-slate-900 bg-slate-900/10 shrink-0 ${
+        <div className={`p-4 border-t border-white/5 bg-white/3 shrink-0 ${
           isSidebarCollapsed ? "md:p-2 md:flex md:flex-col md:items-center md:space-y-3" : "space-y-3"
         }`}>
           <div className={`flex items-center gap-3 ${isSidebarCollapsed ? "md:justify-center" : ""}`}>
@@ -207,7 +248,7 @@ export default function DashboardLayout({
           <Button 
             onClick={handleLogout}
             variant="outline" 
-            className={`border-slate-800 bg-slate-950/50 text-slate-400 hover:text-white hover:bg-slate-900 text-xs ${
+            className={`border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-xs ${
               isSidebarCollapsed ? "md:w-9 md:h-9 md:p-0 md:flex md:items-center md:justify-center" : "w-full py-1.5"
             }`}
             title="Выйти из системы"
@@ -227,7 +268,7 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
-        <header className="h-16 border-b border-slate-900 px-4 md:px-8 flex items-center justify-between bg-slate-950/20 backdrop-blur-md shrink-0 gap-2">
+        <header className="h-16 border-b border-white/5 px-4 md:px-8 flex items-center justify-between bg-white/3 backdrop-blur-xl shrink-0 gap-2">
           <div className="flex items-center gap-3 overflow-hidden">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -239,7 +280,7 @@ export default function DashboardLayout({
             {/* Desktop Sidebar Toggle Button */}
             <button 
               onClick={toggleSidebar}
-              className="hidden md:flex p-2 text-slate-400 hover:text-white hover:bg-slate-800/30 focus:outline-none cursor-pointer rounded-lg transition-colors shrink-0"
+              className="hidden md:flex p-2 text-slate-400 hover:text-slate-200 hover:bg-white/8 focus:outline-none cursor-pointer rounded-lg transition-colors shrink-0"
               aria-label={isSidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
             >
               {isSidebarCollapsed ? (
@@ -250,6 +291,7 @@ export default function DashboardLayout({
             </button>
             <h1 className="text-base md:text-lg font-bold text-white tracking-tight truncate">
               {pathname === "/overview" && "Обзор дашборда"}
+              {pathname === "/search-analytics" && "Аналитика поиска"}
               {pathname === "/vendors" && "Службы доставки"}
               {pathname.startsWith("/maps-reviews") && "Центр отзывов карт"}
               {pathname === "/admin/branches" && "Управление филиалами"}
@@ -258,7 +300,7 @@ export default function DashboardLayout({
             </h1>
           </div>
           <div className="flex items-center gap-4 shrink-0">
-            <div className="text-[10px] md:text-xs text-slate-500 bg-slate-950/40 backdrop-blur-md border border-slate-800/60 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
+            <div className="text-[10px] md:text-xs text-slate-400 bg-white/5 backdrop-blur-md border border-white/8 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span className="hidden sm:inline">Синхронизатор:</span> Активен (Cron)
             </div>

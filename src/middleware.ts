@@ -25,9 +25,9 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Agar tizimga kirgan bo'lsa va login sahifasiga bormoqchi bo'lsa, dashboardga yo'naltiramiz
+  // 2. Agar tizimga kirgan bo'lsa va login sahifasiga bormoqchi bo'lsa, Publisher Robotga yo'naltiramiz
   if (session.isLoggedIn && pathname === "/login") {
-    return NextResponse.redirect(new URL("/overview", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return res;

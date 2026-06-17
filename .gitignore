@@ -44,8 +44,12 @@ next-env.d.ts
 uzum-session/
 yandex-session/
 scratch/
+storage/*.json
+/uploads/
+
 
 # Debug files, logs, and screenshots
+*.log
 *.png
 *.html
 uzum_vendors_api_response.json

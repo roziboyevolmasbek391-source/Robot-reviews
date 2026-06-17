@@ -8,56 +8,173 @@ datasource db {
 }
 
 // ==========================================
-// Foydalanuvchi (Admin/Operator)
+// ROLES & COMMON ENUMS
 // ==========================================
-model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String
-  fullName     String
-  role         UserRole @default(OPERATOR)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 
-  @@index([username])
-  @@index([role])
-}
-
-enum UserRole {
+enum Role {
   ADMIN
   MANAGER
   OPERATOR
 }
 
+enum ReviewSource {
+  GOOGLE_MAPS
+  YANDEX_MAPS
+  YANDEX_VENDOR
+  DGIS
+  UZUM_VENDOR
+}
+
+enum SyncStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
 // ==========================================
-// Filial (Branch)
+// PUBLISHER ROBOT ENUMS
 // ==========================================
+
+enum BranchStatus {
+  DRAFT
+  READY
+  IN_PROGRESS
+  NEEDS_CONFIRMATION
+  PUBLISHED
+  FAILED
+}
+
+enum ProviderSessionStatus {
+  CONNECTED
+  EXPIRED
+  REQUIRES_RECONNECT
+  VALIDATION_PENDING
+}
+
+enum PublishJobStatus {
+  PENDING
+  RUNNING
+  WAITING_FOR_VERIFICATION
+  COMPLETED
+  FAILED
+  PAUSED
+}
+
+enum VerificationRequestStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  FAILED
+}
+
+enum AutomationProvider {
+  GOOGLE_BUSINESS
+  YANDEX_BUSINESS
+  TWOGIS
+}
+
+enum AutomationStatus {
+  QUEUED
+  RUNNING
+  WAITING_FOR_USER
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+enum OAuthProvider {
+  YANDEX_BUSINESS
+  GOOGLE_BUSINESS
+  TWOGIS
+}
+
+// ==========================================
+// FOYDALANUVCHI (USER) — UNIFIED
+// ==========================================
+
+model User {
+  id           String   @id @default(cuid())
+  username     String?  @unique
+  passwordHash String
+  fullName     String?
+  role         Role     @default(OPERATOR)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Fields from aa
+  email        String?  @unique
+  name         String?
+
+  // Relations from aa
+  branches         BranchHistory[]
+  automationRuns   AutomationRun[]
+  notifications    Notification[]
+  oauthCredentials OAuthCredential[]
+  providerSessions ProviderSession[]
+
+  @@index([username])
+  @@index([role])
+}
+
+// ==========================================
+// FILIAL (BRANCH) — UNIFIED
+// ==========================================
+
 model Branch {
-  id         String  @id @default(cuid())
-  externalId String?
-  name       String
-  city       String
-  address    String
-  latitude   Float?
-  longitude  Float?
-  isActive   Boolean @default(true)
+  id             String         @id @default(cuid())
+  // Fields from robot-otziv
+  externalId     String?
+  name           String
+  city           String?
+  address        String
+  latitude       Float?
+  longitude      Float?
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Fields from aa
+  category       String?
+  phone          String?
+  email          String?
+  website        String?
+  description    String?
+  workingHours   Json?
+  photos         String[]       @default([])
+  logo           String?
+  socialLinks    Json?
+  additionalData Json?
+  status         BranchStatus   @default(DRAFT)
 
-  reviews     Review[]
-  syncLogs    ReviewSyncLog[]
-  platformIds BranchPlatformId[]
+  // Relations from robot-otziv
+  reviews        Review[]
+  syncLogs       ReviewSyncLog[]
+  platformIds    BranchPlatformId[]
+
+  // Relations from aa
+  history        BranchHistory[]
+  automationRuns AutomationRun[]
+  searchStats    SearchStat[]
 
   @@index([city])
   @@index([isActive])
   @@index([name])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ==========================================
-// Filialning platformadagi ID'si
+// REVIEW MONITOR MODELS
 // ==========================================
+
 model BranchPlatformId {
   id         String       @id @default(cuid())
   branchId   String
@@ -71,9 +188,6 @@ model BranchPlatformId {
   @@index([source])
 }
 
-// ==========================================
-// Sharh (Review)
-// ==========================================
 model Review {
   id               String       @id @default(cuid())
   branchId         String
@@ -86,11 +200,11 @@ model Review {
   reviewDate       DateTime
   isNew            Boolean      @default(true)
 
-  replyText        String?      @db.Text
-  repliedAt        DateTime?
-  repliedBy        String?
-  aiSentiment      String?      // "POSITIVE", "NEUTRAL", "NEGATIVE"
-  aiTopics         String?      // Comma-separated list of topics
+  replyText   String?   @db.Text
+  repliedAt   DateTime?
+  repliedBy   String?
+  aiSentiment String?
+  aiTopics    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,20 +222,6 @@ model Review {
   @@index([source, branchId, reviewDate])
 }
 
-// ==========================================
-// Sharh Manba'lari
-// ==========================================
-enum ReviewSource {
-  GOOGLE_MAPS
-  YANDEX_MAPS
-  YANDEX_VENDOR
-  DGIS
-  UZUM_VENDOR
-}
-
-// ==========================================
-// Sinxronizatsiya Loglari
-// ==========================================
 model ReviewSyncLog {
   id            String       @id @default(cuid())
   source        ReviewSource
@@ -143,16 +243,6 @@ model ReviewSyncLog {
   @@index([branchId])
 }
 
-enum SyncStatus {
-  RUNNING
-  COMPLETED
-  FAILED
-  PARTIAL
-}
-
-// ==========================================
-// Tizim Sozlamalari (shifrlangan)
-// ==========================================
 model SystemSetting {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -162,3 +252,285 @@ model SystemSetting {
 
   @@index([key])
 }
+
+// ==========================================
+// PUBLISHER ROBOT MODELS (AA ORIGINAL)
+// ==========================================
+
+model OAuthCredential {
+  id                    String        @id @default(cuid())
+  provider              OAuthProvider
+  userId                String
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+  tokenType             String        @default("bearer")
+  scope                 String?
+  expiresAt             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, userId])
+  @@index([provider])
+  @@index([userId])
+}
+
+model BranchHistory {
+  id        String   @id @default(cuid())
+  branchId  String
+  userId    String?
+  action    String
+  payload   Json
+  createdAt DateTime @default(now())
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([branchId, createdAt])
+}
+
+model AutomationRun {
+  id                 String             @id @default(cuid())
+  provider           AutomationProvider
+  status             AutomationStatus   @default(QUEUED)
+  branchId           String
+  requestedByUserId  String?
+  state              Json?
+  confirmationToken  String?
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  branch             Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  requestedBy        User?              @relation(fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  logs               AutomationLog[]
+  notifications      Notification[]
+
+  @@index([branchId, provider])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id              String         @id @default(cuid())
+  userId          String?
+  automationRunId String?
+  title           String
+  body            String
+  readAt          DateTime?
+  createdAt       DateTime       @default(now())
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  automationRun   AutomationRun? @relation(fields: [automationRunId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([automationRunId])
+}
+
+model AutomationLog {
+  id              String        @id @default(cuid())
+  automationRunId String
+  level           LogLevel      @default(INFO)
+  message         String
+  metadata        Json?
+  screenshotPath  String?
+  createdAt       DateTime      @default(now())
+  automationRun   AutomationRun @relation(fields: [automationRunId], references: [id], onDelete: Cascade)
+
+  @@index([automationRunId, createdAt])
+  @@index([level])
+}
+
+model Business {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  category      String
+  description   String?
+  keywords      String[]
+  tags          String[]
+
+  phone         String?
+  website       String?
+  email         String?
+
+  address       String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  serviceArea   String?
+
+  workingHours  Json?
+  holidayHours  Json?
+
+  logo          String?
+  coverImage    String?
+  photos        String[] @default([])
+
+  socialLinks   Json?
+  messengerLinks Json?
+  customFields  Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  drafts        BusinessDraft[]
+  publishJobs   PublishJob[]
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model BusinessDraft {
+  id        String   @id @default(cuid())
+  businessId String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model BusinessTemplate {
+  id      String @id @default(cuid())
+  userId  String
+  name    String
+  data    Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ProviderSession {
+  id                String              @id @default(cuid())
+  provider          AutomationProvider
+  userId            String
+
+  status            ProviderSessionStatus @default(CONNECTED)
+
+  accessToken       String?
+  refreshToken      String?
+  tokenExpiresAt    DateTime?
+
+  storageState      String?
+  browserProfilePath String?
+
+  lastSuccessfulLogin DateTime?
+  lastValidationAt  DateTime?
+  lastPublishAt     DateTime?
+
+  sessionExpiration DateTime?
+  metadata          Json?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, userId])
+  @@index([status])
+  @@index([userId])
+}
+
+model PublishJob {
+  id          String            @id @default(cuid())
+  businessId  String
+  status      PublishJobStatus  @default(PENDING)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  attempts    PublishAttempt[]
+  steps       PublishJobStep[]
+
+  @@index([businessId, status])
+  @@index([createdAt])
+}
+
+model PublishJobStep {
+  id          String   @id @default(cuid())
+  jobId       String
+  provider    AutomationProvider
+  status      String   @default("PENDING")
+
+  currentStep String?
+  progress    Int      @default(0)
+
+  lastUpdate  DateTime @default(now())
+
+  metadata    Json?
+
+  publishJob  PublishJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, provider])
+}
+
+model PublishAttempt {
+  id        String   @id @default(cuid())
+  jobId     String
+  provider  AutomationProvider
+
+  success   Boolean
+  error     String?
+  screenshot String?
+  logs      String?
+
+  createdAt DateTime @default(now())
+
+  publishJob PublishJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, provider])
+  @@index([success])
+}
+
+model VerificationRequest {
+  id        String                    @id @default(cuid())
+  jobId     String
+  provider  AutomationProvider
+
+  status    VerificationRequestStatus @default(PENDING)
+  code      String?
+
+  requestedAt DateTime @default(now())
+  verifiedAt  DateTime?
+
+  @@index([jobId, provider])
+  @@index([status])
+}
+
+model AutomationScreenshot {
+  id              String   @id @default(cuid())
+  automationRunId String
+  filePath        String
+  description     String?
+  createdAt       DateTime @default(now())
+
+  @@index([automationRunId])
+}
+
+model SearchStat {
+  id          String       @id @default(cuid())
+  branchId    String
+  source      ReviewSource
+  query       String       @default("Mazzali")
+  searchCount Int          @default(0)
+  date        DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, source, query, date])
+  @@index([branchId])
+  @@index([source])
+  @@index([date])
+  @@index([query])
+}
+

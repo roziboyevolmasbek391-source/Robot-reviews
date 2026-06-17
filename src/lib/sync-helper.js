@@ -97,9 +97,12 @@ async function saveAndAlertReview(rawReview, branchId, branchName, source) {
             keyboard.url("Открыть оригинал 🔗", savedReview.reviewUrl);
           }
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+          const telegramFriendlyAppUrl = appUrl.includes("localhost") || appUrl.includes("127.0.0.1")
+            ? appUrl.replace("localhost", "example.com").replace("127.0.0.1", "example.com")
+            : appUrl;
           const isVendor = source === "YANDEX_VENDOR" || source === "UZUM_VENDOR";
           const replyPath = isVendor ? "vendors" : "maps-reviews";
-          keyboard.url("Ответить в системе 🤖", `${appUrl}/${replyPath}?reviewId=${savedReview.id}`);
+          keyboard.url("Ответить в системе 🤖", `${telegramFriendlyAppUrl}/${replyPath}?reviewId=${savedReview.id}`);
 
           await bot.api.sendMessage(chatId, message, {
             parse_mode: "HTML",
@@ -116,6 +119,28 @@ async function saveAndAlertReview(rawReview, branchId, branchName, source) {
   return savedReview;
 }
 
+async function updateReviewIfChanged(existing, rawReview) {
+  const hasReplyTextDiff = rawReview.replyText !== existing.replyText;
+  const hasTextDiff = rawReview.text !== existing.text;
+  const hasRatingDiff = rawReview.rating !== existing.rating;
+
+  if (hasReplyTextDiff || hasTextDiff || hasRatingDiff) {
+    console.log(`  -> [Sync Helper] Updating review ${existing.id} (${existing.author}): ReplyTextDiff=${hasReplyTextDiff}, TextDiff=${hasTextDiff}, RatingDiff=${hasRatingDiff}`);
+    return await prisma.review.update({
+      where: { id: existing.id },
+      data: {
+        replyText: rawReview.replyText,
+        repliedAt: rawReview.repliedAt || (rawReview.replyText ? new Date() : null),
+        text: rawReview.text,
+        rating: rawReview.rating,
+        isNew: rawReview.replyText ? false : existing.isNew
+      }
+    });
+  }
+  return null;
+}
+
 module.exports = {
-  saveAndAlertReview
+  saveAndAlertReview,
+  updateReviewIfChanged
 };

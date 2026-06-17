@@ -10,6 +10,8 @@ export interface NormalizedReview {
   text: string | null;
   reviewUrl: string | null;
   reviewDate: Date;
+  replyText?: string | null;
+  repliedAt?: Date | null;
 }
 
 export interface ConnectorBranch {
@@ -44,4 +46,19 @@ export interface IReviewConnector {
    * Oxirgi sinxronizatsiyadan keyin kelgan faqat yangi sharhlarni yuklash.
    */
   getNewReviews(branchPlatformId: string, sinceDate: Date): Promise<NormalizedReview[]>;
+
+  /**
+   * Platforma xaritasida sharhga javob yuborish.
+   * @param branchPlatformId - Platforma'dagi filial ID (orgId, locationId va h.k.)
+   * @param reviewExternalId - Sharh tashqi ID si
+   * @param replyText - Yuboriladigan javob matni
+   * @param extra - Qo'shimcha ma'lumotlar (muallif va sharh matni)
+   * @returns success: true/false, errorMessage?: string
+   */
+  replyToReview?(
+    branchPlatformId: string,
+    reviewExternalId: string,
+    replyText: string,
+    extra?: { author?: string; text?: string }
+  ): Promise<{ success: boolean; errorMessage?: string }>;
 }

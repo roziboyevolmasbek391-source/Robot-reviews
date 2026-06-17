@@ -83,3 +83,34 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "Serverda xatolik" }, { status: 500 });
   }
 }
+
+// Filial avtomatizatsiya statusini olish (Polling uchun)
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const branch = await prisma.branch.findUnique({
+      where: { id },
+      include: {
+        automationRuns: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            logs: {
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            }
+          }
+        }
+      }
+    });
+
+    if (!branch) {
+      return NextResponse.json({ error: "Filial topilmadi" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, automationRuns: branch.automationRuns });
+  } catch (error) {
+    console.error("Branch GET error:", error);
+    return NextResponse.json({ error: "Serverda xatolik" }, { status: 500 });
+  }
+}
+

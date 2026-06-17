@@ -1,4 +1,4 @@
-import { PrismaClient, ReviewSource, UserRole } from "@prisma/client";
+import { PrismaClient, ReviewSource, Role } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -18,7 +18,7 @@ async function main() {
         username: "admin",
         passwordHash,
         fullName: "Tizim Administratori",
-        role: UserRole.ADMIN,
+        role: Role.ADMIN,
         isActive: true,
       },
     });
@@ -39,7 +39,7 @@ async function main() {
         username: "user",
         passwordHash,
         fullName: "Oddiy Foydalanuvchi",
-        role: UserRole.OPERATOR,
+        role: Role.OPERATOR,
         isActive: true,
       },
     });
