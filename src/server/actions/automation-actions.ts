@@ -17,9 +17,15 @@ export async function startAutomationAction(input: unknown) {
   const payload = startAutomationSchema.parse(input);
   const runs = await startAutomations(payload, session.id);
 
-  for (const run of runs) {
-    void executeAutomationRun(run.id);
-  }
+  void (async () => {
+    for (const run of runs) {
+      try {
+        await executeAutomationRun(run.id);
+      } catch (error) {
+        console.error(`[Automation] Run ${run.id} failed:`, error);
+      }
+    }
+  })();
 
   revalidatePath('/automations');
   revalidatePath(`/branches/${payload.branchId}`);

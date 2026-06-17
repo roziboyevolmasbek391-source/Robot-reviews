@@ -17,7 +17,7 @@ type BranchOption = {
 
 export function AutomationStartForm({ branches }: { branches: BranchOption[] }) {
   const [branchId, setBranchId] = useState(branches[0]?.id ?? '');
-  const [providers, setProviders] = useState<AutomationProviderValue[]>([...automationProviders]);
+  const [providers, setProviders] = useState<AutomationProviderValue[]>(['YANDEX_BUSINESS']);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 

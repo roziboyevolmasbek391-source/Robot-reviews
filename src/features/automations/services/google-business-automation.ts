@@ -24,6 +24,33 @@ export class GoogleBusinessAutomation extends BaseBusinessAutomation {
     submit: '[data-testid="submit"], button[type="submit"]',
   };
 
+  protected async openCreatePage(page: Page, runId: string) {
+    await super.openCreatePage(page, runId);
+
+    if (page.url().includes('accounts.google.com')) {
+      await this.pauseForUser(
+        runId,
+        page,
+        'Google запросил вход или подтверждение Gmail. Пройдите его один раз в открытом окне Chrome.',
+      );
+
+      await page
+        .waitForFunction(() => !location.href.includes('accounts.google.com'), { timeout: 300_000 })
+        .catch(() => null);
+
+      if (page.url().includes('accounts.google.com')) {
+        throw new Error('Google login confirmation was not completed in time.');
+      }
+
+      await prisma.automationRun.update({
+        where: { id: runId },
+        data: { status: AutomationStatus.RUNNING },
+      });
+
+      await this.waitForDomStable(page);
+    }
+  }
+
   protected async fillBranch(page: Page, context: AutomationContext) {
     const { branch, runId } = context;
     await page.waitForLoadState('domcontentloaded');

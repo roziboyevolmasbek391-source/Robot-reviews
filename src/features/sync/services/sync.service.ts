@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ReviewSource, SyncStatus } from "@prisma/client";
+import { AutomationStatus, ReviewSource, SyncStatus } from "@prisma/client";
 import { decrypt } from "@/lib/encryption";
 import { SYSTEM_SETTING_KEYS } from "@/lib/constants";
 import { GoogleReviewsConnector } from "@/connectors/google/google.connector";
@@ -21,6 +21,22 @@ function cleanReviewText(text: string | null): string {
 }
 
 export class SyncService {
+  private async hasActiveAutomationRun() {
+    const activeCount = await prisma.automationRun.count({
+      where: {
+        status: {
+          in: [
+            AutomationStatus.QUEUED,
+            AutomationStatus.RUNNING,
+            AutomationStatus.WAITING_FOR_USER,
+          ],
+        },
+      },
+    });
+
+    return activeCount > 0;
+  }
+
   /**
    * Ma'lum bir manba va filial uchun sinxronizatsiyani amalga oshirish
    */
@@ -30,6 +46,11 @@ export class SyncService {
     duplicates: number;
     totalFound: number;
   }> {
+    if (await this.hasActiveAutomationRun()) {
+      console.log("[SyncService] Robot is active. Review sync skipped to avoid interfering with branch publishing.");
+      return { synced: 0, failed: 0, duplicates: 0, totalFound: 0 };
+    }
+
     const startedAt = new Date();
 
     // 1. Filial ma'lumotlarini olish
@@ -164,9 +185,12 @@ export class SyncService {
             const rawText = rawReview.text || "";
             const existingText = existing.text || "";
             const bestText = rawText.length > existingText.length ? rawText : existingText;
+            const incomingReplyText = rawReview.replyText?.trim() || null;
+            const existingReplyText = existing.replyText?.trim() || null;
+            const shouldUpdateReply = incomingReplyText !== null;
 
-            const hasReplyTextDiff = rawReview.replyText !== existing.replyText;
-            const hasTextDiff = bestText !== existing.text;
+            const hasReplyTextDiff = shouldUpdateReply && incomingReplyText !== existingReplyText;
+            const hasTextDiff = (bestText || null) !== (existing.text || null);
             const hasRatingDiff = rawReview.rating !== existing.rating;
             const hasHashDiff = rawReview.externalReviewId !== existing.externalReviewId;
 
@@ -176,11 +200,11 @@ export class SyncService {
                 where: { id: existing.id },
                 data: {
                   externalReviewId: rawReview.externalReviewId,
-                  replyText: rawReview.replyText || existing.replyText || null,
-                  repliedAt: rawReview.repliedAt || existing.repliedAt || (rawReview.replyText ? new Date() : null),
+                  replyText: shouldUpdateReply ? incomingReplyText : existing.replyText,
+                  repliedAt: rawReview.repliedAt || existing.repliedAt || (incomingReplyText ? new Date() : null),
                   text: bestText || null,
                   rating: rawReview.rating,
-                  isNew: rawReview.replyText ? false : existing.isNew,
+                  isNew: incomingReplyText ? false : existing.isNew,
                 },
               });
               syncedCount++;
@@ -285,6 +309,11 @@ export class SyncService {
     syncedReviews: number;
     errorsCount: number;
   }> {
+    if (await this.hasActiveAutomationRun()) {
+      console.log("[SyncService] Robot is active. Full background sync skipped.");
+      return { processedBranches: 0, syncedReviews: 0, errorsCount: 0 };
+    }
+
     console.log("[SyncService] Barcha filiallar sinxronizatsiyasi boshlanmoqda...");
     const branches = await prisma.branch.findMany({
       where: { isActive: true },
