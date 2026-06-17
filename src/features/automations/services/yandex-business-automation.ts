@@ -4,6 +4,7 @@ import type { Branch } from '@prisma/client';
 import type { Locator, Page } from 'playwright';
 import { AutomationStatus } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
+import { tryAcquireYandexBrowserLock } from '@/lib/yandex-browser-lock';
 import { BaseBusinessAutomation } from './base-business-automation';
 import type { AutomationContext } from './types';
 
@@ -23,6 +24,20 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
   protected providerName = 'Yandex Business';
   protected createOrganizationUrl = process.env.YANDEX_BUSINESS_ADD_URL ?? 'https://yandex.ru/sprav/add';
   protected storageStateEnvKey = 'YANDEX_BUSINESS_STORAGE_STATE';
+
+  async run(context: AutomationContext) {
+    const release = tryAcquireYandexBrowserLock(`automation:${context.runId}`);
+
+    if (!release) {
+      throw new Error('Yandex Business browser is already busy. Finish the current Yandex action before starting another one.');
+    }
+
+    try {
+      await super.run(context);
+    } finally {
+      release();
+    }
+  }
 
   protected selectors = {
     name: 'input[type="text"]',

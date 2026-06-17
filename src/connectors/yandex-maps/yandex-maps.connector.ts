@@ -1,6 +1,7 @@
 import { ReviewSource } from "@prisma/client";
 import { ConnectorBranch, IReviewConnector, NormalizedReview } from "../base.connector";
 import * as crypto from "crypto";
+import { isYandexBrowserBusy, tryAcquireYandexBrowserLock } from "@/lib/yandex-browser-lock";
 
 const months: Record<string, number> = {
   "января": 0, "февраля": 1, "марта": 2, "апреля": 3, "мая": 4, "июня": 5,
@@ -145,6 +146,12 @@ export class YandexMapsConnector implements IReviewConnector {
   }
 
   private async scrapeCabinetReviews(orgId: string, limit: number): Promise<NormalizedReview[]> {
+    const release = tryAcquireYandexBrowserLock(`scrape:${orgId}`);
+    if (!release) {
+      console.warn('[Yandex Maps Connector] Yandex browser is busy with another automation. Skipping cabinet reviews scrape.');
+      return [];
+    }
+
     const storageState = process.env.YANDEX_BUSINESS_STORAGE_STATE ?? './storage/yandex.json';
     const headless = (process.env.PLAYWRIGHT_HEADLESS ?? 'true') === 'true';
 
@@ -251,6 +258,8 @@ export class YandexMapsConnector implements IReviewConnector {
       console.error('[Yandex Maps Connector] Playwright cabinet scraping error:', e.message);
       if (browser) await browser.close();
       return [];
+    } finally {
+      release();
     }
   }
 
@@ -346,6 +355,14 @@ export class YandexMapsConnector implements IReviewConnector {
     extra?: { author?: string; text?: string }
   ): Promise<{ success: boolean; errorMessage?: string }> {
     console.log(`[Yandex Maps Connector] replyToReview for org ${branchPlatformId}, review ${reviewExternalId}`);
+
+    const release = tryAcquireYandexBrowserLock(`reply:${branchPlatformId}:${reviewExternalId}`);
+    if (!release) {
+      return {
+        success: false,
+        errorMessage: 'Yandex Business сейчас занят другим действием. Дождитесь окончания добавления филиала и повторите публикацию ответа.',
+      };
+    }
 
     const storageState = process.env.YANDEX_BUSINESS_STORAGE_STATE ?? './storage/yandex.json';
     const headless = (process.env.PLAYWRIGHT_HEADLESS ?? 'false') === 'true';
@@ -460,7 +477,15 @@ export class YandexMapsConnector implements IReviewConnector {
 
         await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
         await submitBtn.click();
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(5000);
+
+        const saved = await this.verifyReplySaved(page, container, replyText);
+        if (!saved) {
+          return {
+            success: false,
+            errorMessage: 'Ответ был введен и кнопка отправки нажата, но Яндекс не подтвердил сохранение. Проверьте кабинет Яндекс Бизнес и попробуйте еще раз.',
+          };
+        }
 
         console.log(`[Yandex Maps Connector] Reply posted successfully via Sprav Cabinet`);
         return { success: true };
@@ -536,7 +561,15 @@ export class YandexMapsConnector implements IReviewConnector {
           console.warn('[Yandex Maps Connector] Submit button is not enabled or visible, sending Enter key...');
           await page.keyboard.press('Enter');
         }
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(5000);
+
+        const saved = await this.verifyReplySaved(page, scope, replyText);
+        if (!saved) {
+          return {
+            success: false,
+            errorMessage: 'Ответ был введен и кнопка отправки нажата, но Яндекс не подтвердил сохранение. Проверьте кабинет Яндекс Бизнес и попробуйте еще раз.',
+          };
+        }
 
         console.log(`[Yandex Maps Connector] Reply posted successfully via Public Maps page`);
         return { success: true };
@@ -546,7 +579,41 @@ export class YandexMapsConnector implements IReviewConnector {
       console.error(`[Yandex Maps Connector] ${msg}`);
       return { success: false, errorMessage: msg };
     } finally {
+      release();
       await browser?.close();
     }
+  }
+
+  private async verifyReplySaved(page: import('playwright').Page, scope: any, replyText: string): Promise<boolean> {
+    const normalizedReply = replyText.trim();
+    const escapedReply = normalizedReply.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const errorVisible = await page
+      .getByText(/ошибка|не удалось|попробуйте позже|error|failed/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (errorVisible) {
+      return false;
+    }
+
+    const textVisible = await scope
+      .getByText(new RegExp(escapedReply, 'i'))
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (textVisible) {
+      return true;
+    }
+
+    const successVisible = await page
+      .getByText(/сохранено|отправлено|опубликовано|ответ опубликован|saved|sent|published/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    return successVisible;
   }
 }
