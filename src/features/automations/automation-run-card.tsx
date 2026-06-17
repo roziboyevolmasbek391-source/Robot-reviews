@@ -30,9 +30,16 @@ type AutomationRunCardProps = {
   run: Run;
 };
 
+const ESTIMATED_DURATIONS: Record<string, number> = {
+  YANDEX_BUSINESS: 90,
+  GOOGLE_BUSINESS: 60,
+  TWOGIS: 45,
+};
+
 export function AutomationRunCard({ run }: AutomationRunCardProps) {
   const router = useRouter();
   const [code, setCode] = useState('');
+  const [now, setNow] = useState(() => Date.now());
   const [isSubmitting, startSubmitTransition] = useTransition();
 
   const isActive =
@@ -50,6 +57,16 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
 
     return () => clearInterval(interval);
   }, [isActive, router]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isActive]);
 
   async function submitCode() {
     if (!code.trim() || isSubmitting) return;
@@ -84,6 +101,18 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
     return labels[status] ?? status;
   };
 
+  const estimate = ESTIMATED_DURATIONS[run.provider] ?? 60;
+  const startTimestamp = new Date(run.createdAt).getTime();
+  const elapsed = Math.max(0, Math.floor((now - startTimestamp) / 1000));
+  const remainingSeconds = run.status === 'RUNNING' || run.status === 'QUEUED'
+    ? Math.max(1, estimate - elapsed)
+    : 0;
+  const progress = run.status === 'COMPLETED'
+    ? 100
+    : run.status === 'RUNNING' || run.status === 'QUEUED'
+      ? Math.min(98, Math.max(6, Math.floor((elapsed / estimate) * 100)))
+      : 0;
+
   return (
     <Card className={`transition-all duration-300 ${run.status === 'RUNNING' ? 'border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.05)] bg-white/6' : ''}`}>
       <CardBody>
@@ -99,19 +128,38 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
           <Badge tone={badgeTone(run.status)}>{statusLabel(run.status)}</Badge>
         </div>
 
+        {(run.status === 'RUNNING' || run.status === 'QUEUED') && (
+          <div className="mt-4 grid gap-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted">
+                <Clock className="h-3.5 w-3.5" />
+                Примерно осталось: ~{remainingSeconds} сек
+              </span>
+              <span className="font-semibold text-violet-400">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-violet-500 transition-all duration-1000 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Verification Code Input */}
         {run.status === 'WAITING_FOR_USER' && (
-          <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 animate-pulse-subtle">
+          <div className="mt-4 rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
             <p className="text-xs text-amber-300 font-medium mb-2">
               {run.state && typeof run.state === 'object' && run.state.reason
                 ? run.state.reason
                 : 'Площадка ожидает ввода кода подтверждения (SMS/Звонок):'}
             </p>
-            <div className="flex gap-2">
+            <div className="flex max-w-md gap-2">
               <input
                 type="text"
-                placeholder="Введите код подтверждения"
-                className="h-9 flex-1 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-all"
+                inputMode="numeric"
+                placeholder="Код"
+                className="h-9 w-32 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-all"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 onKeyDown={(e) => {

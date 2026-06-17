@@ -35,7 +35,9 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
     try {
       await super.run(context);
     } finally {
-      release();
+      if (!this.keepBrowserOpen) {
+        release();
+      }
     }
   }
 
@@ -196,6 +198,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
           ]);
           if (!stillNeedsConfirmation) {
             await this.log(runId, 'Yandex: Verification completed directly in browser window.');
+            this.keepBrowserOpen = false;
             return 'submitted';
           }
         }
@@ -267,6 +270,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
                 data: { state: updatedState },
               });
               await this.log(runId, 'Yandex: Code accepted.');
+              this.keepBrowserOpen = false;
               return 'submitted';
             }
           } catch (fillError) {
