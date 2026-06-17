@@ -42,6 +42,7 @@ export async function confirmAutomationAction(input: unknown) {
 import { YandexBusinessAutomation } from '@/features/automations/services/yandex-business-automation';
 import { prisma } from '@/lib/db/prisma';
 import { AutomationStatus, AutomationProvider } from '@prisma/client';
+import { forceReleaseYandexBrowserLock } from '@/lib/yandex-browser-lock';
 
 export async function submitAutomationVerificationCodeAction(input: { runId: string; code: string }) {
   await requireSession();
@@ -87,6 +88,44 @@ export async function submitAutomationVerificationCodeAction(input: { runId: str
       }
     });
     void executeAutomationRun(runId);
+  }
+
+  revalidatePath('/automations');
+  revalidatePath(`/branches/${run.branchId}`);
+}
+
+export async function cancelAutomationRunAction(input: { runId: string }) {
+  await requireSession();
+  const { runId } = input;
+
+  const run = await prisma.automationRun.findUnique({
+    where: { id: runId },
+    select: { id: true, branchId: true, status: true, provider: true },
+  });
+
+  if (!run) {
+    throw new Error('Запуск автоматизации не найден');
+  }
+
+  if (
+    run.status !== AutomationStatus.QUEUED &&
+    run.status !== AutomationStatus.RUNNING &&
+    run.status !== AutomationStatus.WAITING_FOR_USER
+  ) {
+    return;
+  }
+
+  await prisma.automationRun.update({
+    where: { id: runId },
+    data: {
+      status: AutomationStatus.CANCELLED,
+      finishedAt: new Date(),
+      state: { reason: 'Процесс остановлен пользователем' },
+    },
+  });
+
+  if (run.provider === AutomationProvider.YANDEX_BUSINESS) {
+    forceReleaseYandexBrowserLock();
   }
 
   revalidatePath('/automations');

@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Clock, CheckCircle2, XCircle, AlertTriangle, Square } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardBody } from '@/components/ui/card';
 import { providerLabel, type AutomationProviderValue } from './provider-label';
-import { submitAutomationVerificationCodeAction } from '@/server/actions/automation-actions';
+import { cancelAutomationRunAction, submitAutomationVerificationCodeAction } from '@/server/actions/automation-actions';
 
 type Log = {
   id: string;
@@ -41,6 +41,7 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
   const [code, setCode] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [isSubmitting, startSubmitTransition] = useTransition();
+  const [isCancelling, startCancelTransition] = useTransition();
 
   const isActive =
     run.status === 'RUNNING' ||
@@ -78,6 +79,19 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
         router.refresh();
       } catch (error) {
         alert(error instanceof Error ? error.message : 'Не удалось отправить код');
+      }
+    });
+  }
+
+  function cancelRun() {
+    if (isCancelling) return;
+
+    startCancelTransition(async () => {
+      try {
+        await cancelAutomationRunAction({ runId: run.id });
+        router.refresh();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : 'Не удалось остановить процесс');
       }
     });
   }
@@ -125,7 +139,20 @@ export function AutomationRunCard({ run }: AutomationRunCardProps) {
             </div>
             <p className="text-xs text-muted mt-0.5">{run.branch.name}</p>
           </div>
-          <Badge tone={badgeTone(run.status)}>{statusLabel(run.status)}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge tone={badgeTone(run.status)}>{statusLabel(run.status)}</Badge>
+            {isActive && (
+              <button
+                type="button"
+                onClick={cancelRun}
+                disabled={isCancelling}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rose-500/20 bg-rose-500/10 px-2.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/20 disabled:opacity-50"
+              >
+                {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Square className="h-3.5 w-3.5" />}
+                Остановить
+              </button>
+            )}
+          </div>
         </div>
 
         {(run.status === 'RUNNING' || run.status === 'QUEUED') && (

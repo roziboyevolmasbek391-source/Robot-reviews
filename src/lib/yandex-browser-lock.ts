@@ -33,6 +33,10 @@ export function isYandexBrowserBusy() {
   return Boolean(getYandexBrowserLock());
 }
 
+export function forceReleaseYandexBrowserLock() {
+  delete state()[LOCK_KEY];
+}
+
 export function tryAcquireYandexBrowserLock(owner: string): (() => void) | null {
   const globalState = state();
 

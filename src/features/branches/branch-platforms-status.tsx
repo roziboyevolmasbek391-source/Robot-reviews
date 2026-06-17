@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, Clock, Square } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { providerLabel, type AutomationProviderValue } from '../automations/provider-label';
-import { submitAutomationVerificationCodeAction } from '@/server/actions/automation-actions';
+import { cancelAutomationRunAction, submitAutomationVerificationCodeAction } from '@/server/actions/automation-actions';
 
 type Log = {
   id: string;
@@ -40,6 +40,7 @@ export function BranchPlatformsStatus({ branchId, initialRuns }: BranchPlatforms
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [verificationCodes, setVerificationCodes] = useState<Record<string, string>>({});
   const [isSubmittingCode, setIsSubmittingCode] = useState<Record<string, boolean>>({});
+  const [isCancelling, setIsCancelling] = useState<Record<string, boolean>>({});
 
   // Sync state with props when initialRuns updates from the server
   useEffect(() => {
@@ -120,6 +121,36 @@ export function BranchPlatformsStatus({ branchId, initialRuns }: BranchPlatforms
     }
   }
 
+  async function cancelRun(runId: string) {
+    setIsCancelling((prev) => ({ ...prev, [runId]: true }));
+
+    try {
+      await cancelAutomationRunAction({ runId });
+      setRuns((prevRuns) =>
+        prevRuns.map((run) =>
+          run.id === runId
+            ? {
+                ...run,
+                status: 'CANCELLED',
+                logs: [
+                  {
+                    id: 'temp-cancel-log',
+                    message: 'Процесс остановлен пользователем',
+                    createdAt: new Date(),
+                  },
+                  ...run.logs,
+                ],
+              }
+            : run
+        )
+      );
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Не удалось остановить процесс');
+    } finally {
+      setIsCancelling((prev) => ({ ...prev, [runId]: false }));
+    }
+  }
+
   // Providers list to iterate through
   const providers = ['GOOGLE_BUSINESS', 'YANDEX_BUSINESS', 'TWOGIS'] as const;
 
@@ -173,9 +204,22 @@ export function BranchPlatformsStatus({ branchId, initialRuns }: BranchPlatforms
                     {providerLabel(provider as AutomationProviderValue)}
                   </span>
                 </div>
-                <Badge className={`${statusConfig.badgeColor} text-xs font-semibold px-2.5 py-0.5 border border-white/5`}>
-                  {statusConfig.label}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={`${statusConfig.badgeColor} text-xs font-semibold px-2.5 py-0.5 border border-white/5`}>
+                    {statusConfig.label}
+                  </Badge>
+                  {run && (status === 'RUNNING' || status === 'QUEUED' || status === 'WAITING_FOR_USER') && (
+                    <button
+                      type="button"
+                      onClick={() => cancelRun(run.id)}
+                      disabled={isCancelling[run.id]}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-rose-500/20 bg-rose-500/10 px-2 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/20 disabled:opacity-50"
+                    >
+                      {isCancelling[run.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Square className="h-3 w-3" />}
+                      Остановить
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Progress Bar & Countdown timer for RUNNING status */}

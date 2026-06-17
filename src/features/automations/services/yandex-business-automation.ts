@@ -2,7 +2,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import type { Branch } from '@prisma/client';
 import type { Locator, Page } from 'playwright';
-import { AutomationStatus } from '@prisma/client';
+import { AutomationStatus, LogLevel } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { tryAcquireYandexBrowserLock } from '@/lib/yandex-browser-lock';
 import { BaseBusinessAutomation } from './base-business-automation';
@@ -109,19 +109,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
 
     // ─── Step 4: Contact details ────────────────────────────────────
     await this.retry(runId, 'Step 4: Contacts', async () => {
-      let phoneValue = branch.phone || '';
-      const digits = phoneValue.replace(/\D/g, '');
-      if (digits.length === 9) {
-        phoneValue = `+998${digits}`;
-      } else if (digits.length === 12 && digits.startsWith('998')) {
-        phoneValue = `+${digits}`;
-      }
-
-      await this.fillOptional(runId, page, 'Phone', phoneValue, [
-        () => page.locator('input[name="c_p"]'),
-        () => page.locator('input[type="tel"]').first(),
-        () => page.getByLabel(/Телефон/i),
-      ]);
+      await this.fillYandexPhone(page, runId, branch.phone || '');
       await this.fillOptional(runId, page, 'Website', branch.website || '', [
         () => page.locator('input[name="c_u"]'),
         () => page.locator('input[type="url"]').first(),
@@ -210,6 +198,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
 
         if (!run || run.status === AutomationStatus.FAILED || run.status === AutomationStatus.CANCELLED) {
           await this.log(runId, 'Yandex: Run status changed externally. Stopping wait.');
+          this.keepBrowserOpen = false;
           return 'waiting-for-user';
         }
 
@@ -702,6 +691,71 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
       }
     }
 
+    return false;
+  }
+
+  private normalizeUzbekPhone(phone: string) {
+    const digits = phone.replace(/\D/g, '');
+
+    if (digits.length === 9) {
+      return `+998${digits}`;
+    }
+
+    if (digits.length === 12 && digits.startsWith('998')) {
+      return `+${digits}`;
+    }
+
+    return phone.trim();
+  }
+
+  private async fillYandexPhone(page: Page, runId: string, rawPhone: string) {
+    const phoneValue = this.normalizeUzbekPhone(rawPhone);
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+
+    if (!phoneDigits) {
+      await this.log(runId, 'Yandex phone is empty in branch data', LogLevel.WARN);
+      return false;
+    }
+
+    const locators: Array<() => Locator> = [
+      () => page.locator('input[name="c_p"]').first(),
+      () => page.locator('input[name*="phone" i]').first(),
+      () => page.locator('input[type="tel"]').first(),
+      () => page.locator('input[autocomplete="tel"]').first(),
+      () => page.locator('input[placeholder*="тел" i]').first(),
+      () => page.locator('input[aria-label*="тел" i]').first(),
+      () => page.getByLabel(/телефон|phone/i).first(),
+      () => page.locator('label').filter({ hasText: /номер телефона|телефон|phone/i }).locator('..').locator('input').first(),
+      () => page.locator('.Textinput-Control').first(),
+    ];
+
+    for (const buildLocator of locators) {
+      const input = buildLocator();
+
+      try {
+        await input.waitFor({ state: 'visible', timeout: 2_500 });
+        await input.scrollIntoViewIfNeeded().catch(() => {});
+        await input.click({ timeout: 2_000 }).catch(() => {});
+        await input.fill('').catch(() => {});
+        await input.pressSequentially(phoneValue, { delay: 20 }).catch(async () => {
+          await input.fill(phoneValue);
+        });
+        await page.waitForTimeout(400);
+
+        const value = await input.inputValue().catch(() => '');
+        const filledDigits = value.replace(/\D/g, '');
+
+        if (filledDigits.endsWith(phoneDigits.slice(-9)) || phoneDigits.endsWith(filledDigits.slice(-9))) {
+          await this.log(runId, `Yandex field filled: Phone (${phoneValue})`);
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    await this.log(runId, 'Yandex phone field was not filled. Pausing for manual phone entry.', LogLevel.WARN);
+    await this.pauseForUser(runId, page, `Введите телефон ${phoneValue} в поле "Номер телефона" и нажмите продолжить.`);
     return false;
   }
 
