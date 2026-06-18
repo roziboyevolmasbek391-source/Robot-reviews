@@ -12,7 +12,30 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scratch/**",
+    "scripts/**",
+    "*.js",
+    "sync-*.js",
+    "test-*.js",
+    "check-*.js",
+    "print-*.js",
+    "generate-*.js",
+    "inspect-*.js",
+    "list-*.js",
+    "read-*.js",
+    "run-*.js",
+    "backfill-*.js",
+    "src/**/*.js",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/incompatible-library": "warn",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

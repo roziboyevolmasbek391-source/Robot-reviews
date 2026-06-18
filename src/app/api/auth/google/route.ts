@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     const clientId = decrypt(clientIdSetting.value);
-    const redirectUri = "http://localhost:3001/api/auth/google/callback";
+    const redirectUri = new URL("/api/auth/google/callback", req.url).toString();
     
     // Google ruxsatnoma olish havolasini yaratamiz
     // access_type=offline va prompt=consent refresh_token olish uchun shart!

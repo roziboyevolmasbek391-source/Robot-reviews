@@ -1,7 +1,7 @@
 import { ReviewSource } from "@prisma/client";
 import { ConnectorBranch, IReviewConnector, NormalizedReview } from "../base.connector";
 import * as crypto from "crypto";
-import { isYandexBrowserBusy, tryAcquireYandexBrowserLock } from "@/lib/yandex-browser-lock";
+import { tryAcquireYandexBrowserLock } from "@/lib/yandex-browser-lock";
 
 const months: Record<string, number> = {
   "января": 0, "февраля": 1, "марта": 2, "апреля": 3, "мая": 4, "июня": 5,
@@ -191,9 +191,9 @@ export class YandexMapsConnector implements IReviewConnector {
         console.log('[Yandex Maps Connector] Timeout waiting for reviews to load in cabinet.');
       });
 
-      const pageReviews = await page.evaluate(() => {
+      const pageReviews = await page.evaluate((maxReviews) => {
         const cards = Array.from(document.querySelectorAll('.Review'));
-        return cards.map(card => {
+        return cards.slice(0, maxReviews).map(card => {
           const authorEl = card.querySelector('.Review-UserName') as HTMLElement;
           const author = authorEl ? authorEl.innerText.trim() : 'Anonim';
 
@@ -225,7 +225,7 @@ export class YandexMapsConnector implements IReviewConnector {
             replyText
           };
         });
-      });
+      }, limit);
 
       console.log(`[Yandex Maps Connector] Cabinet scraped ${pageReviews.length} reviews.`);
 

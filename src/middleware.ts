@@ -12,10 +12,15 @@ export async function middleware(req: NextRequest) {
   if (!session.isLoggedIn) {
     // API route'larni himoya qilish
     if (pathname.startsWith("/api/")) {
-      // Login API'ga ruxsat beramiz
-      if (pathname === "/api/auth/login") {
+      const publicApiRoutes = new Set([
+        "/api/auth/login",
+        "/api/auth/google/callback",
+      ]);
+
+      if (publicApiRoutes.has(pathname)) {
         return res;
       }
+
       return NextResponse.json({ error: "Ruxsat etilmagan" }, { status: 401 });
     }
 

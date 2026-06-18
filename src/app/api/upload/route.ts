@@ -85,6 +85,3 @@ export async function POST(request: NextRequest) {
 /**
  * Configuration for Next.js — disable body parser for multipart
  */
-export const config = {
-  api: { bodyParser: false },
-};

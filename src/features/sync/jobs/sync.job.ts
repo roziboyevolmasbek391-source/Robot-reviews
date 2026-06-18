@@ -17,7 +17,7 @@ export async function initSyncJob() {
   }
 
   // Sozlamalardan sinxronizatsiya intervalini olamiz (default 10 daqiqa)
-  let intervalSetting = await prisma.systemSetting.findUnique({
+  const intervalSetting = await prisma.systemSetting.findUnique({
     where: { key: SYSTEM_SETTING_KEYS.SYNC_INTERVAL_MINUTES },
   });
 

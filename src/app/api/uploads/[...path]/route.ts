@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? './uploads';
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
 /**
  * GET /api/uploads/[...path]
@@ -16,7 +16,8 @@ export async function GET(
 ) {
   try {
     const { path: segments } = await props.params;
-    const filePath = path.resolve(UPLOAD_DIR, ...segments);
+    const safeSegments = segments.filter((segment) => segment && segment !== '..');
+    const filePath = path.resolve(UPLOAD_DIR, ...safeSegments);
 
     // Security: ensure the resolved path is inside the uploads directory
     const resolvedUpload = path.resolve(UPLOAD_DIR);

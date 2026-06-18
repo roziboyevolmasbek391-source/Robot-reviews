@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const clientId = decrypt(clientIdSetting.value);
     const clientSecret = decrypt(clientSecretSetting.value);
-    const redirectUri = "http://localhost:3001/api/auth/google/callback";
+    const redirectUri = new URL("/api/auth/google/callback", req.url).toString();
 
     // Google token API ga POST so'rov yuboramiz
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {

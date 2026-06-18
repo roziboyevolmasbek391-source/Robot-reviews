@@ -3,6 +3,151 @@ import { getIronSession } from "iron-session";
 import { prisma } from "@/lib/prisma";
 import { sessionOptions, SessionData } from "@/lib/session";
 import { ReviewSource } from "@prisma/client";
+import { GoogleReviewsConnector } from "@/connectors/google/google.connector";
+import { DgisConnector } from "@/connectors/dgis/dgis.connector";
+import { SYSTEM_SETTING_KEYS } from "@/lib/constants";
+import { decrypt } from "@/lib/encryption";
+
+type LiveSearchAnalytics = {
+  totalSearches: number;
+  searchesByPlatformMap: Record<string, number>;
+  searchesByQuery: Array<{ name: string; value: number }>;
+  searchesByBranch: Array<{ id: string; name: string; value: number }>;
+  dailyCounts: Map<string, number>;
+  dailyCountsByPlatform: Map<string, Record<string, number>>;
+};
+
+async function getGoogleConnector() {
+  const clientIdSetting = await prisma.systemSetting.findUnique({ where: { key: SYSTEM_SETTING_KEYS.GOOGLE_CLIENT_ID } });
+  const clientSecretSetting = await prisma.systemSetting.findUnique({ where: { key: SYSTEM_SETTING_KEYS.GOOGLE_CLIENT_SECRET } });
+  const refreshTokenSetting = await prisma.systemSetting.findUnique({ where: { key: SYSTEM_SETTING_KEYS.GOOGLE_REFRESH_TOKEN } });
+
+  const clientId = clientIdSetting?.value ? decrypt(clientIdSetting.value) : (process.env.GOOGLE_CLIENT_ID || "");
+  const clientSecret = clientSecretSetting?.value ? decrypt(clientSecretSetting.value) : (process.env.GOOGLE_CLIENT_SECRET || "");
+  const refreshToken = refreshTokenSetting?.value ? decrypt(refreshTokenSetting.value) : (process.env.GOOGLE_REFRESH_TOKEN || "");
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return null;
+  }
+
+  return new GoogleReviewsConnector({ clientId, clientSecret, refreshToken });
+}
+
+async function getLiveSearchAnalytics(input: {
+  branchId?: string;
+  source?: ReviewSource;
+  dateFrom: Date;
+  dateTo: Date;
+}): Promise<LiveSearchAnalytics | null> {
+  const connectors: Partial<Record<ReviewSource, GoogleReviewsConnector | DgisConnector>> = {};
+
+  if (!input.source || input.source === ReviewSource.GOOGLE_MAPS) {
+    const googleConnector = await getGoogleConnector();
+    if (googleConnector?.getSearchAnalytics) {
+      connectors.GOOGLE_MAPS = googleConnector;
+    }
+  }
+
+  if (!input.source || input.source === ReviewSource.DGIS) {
+    connectors.DGIS = new DgisConnector();
+  }
+
+  const sources = Object.keys(connectors) as ReviewSource[];
+  if (sources.length === 0) {
+    return null;
+  }
+
+  const mappings = await prisma.branchPlatformId.findMany({
+    where: {
+      source: { in: sources },
+      ...(input.branchId ? { branchId: input.branchId } : {}),
+      platformId: { not: "" },
+    },
+    include: {
+      branch: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+
+  if (mappings.length === 0) {
+    return null;
+  }
+
+  const searchesByPlatformMap: Record<string, number> = {
+    GOOGLE_MAPS: 0,
+    YANDEX_MAPS: 0,
+    YANDEX_VENDOR: 0,
+    DGIS: 0,
+    UZUM_VENDOR: 0,
+  };
+  const dailyCounts = new Map<string, number>();
+  const dailyCountsByPlatform = new Map<string, Record<string, number>>();
+  const queryCounts = new Map<string, number>();
+  const branchCounts = new Map<string, { id: string; name: string; value: number }>();
+  const seenScopes = new Set<string>();
+
+  for (const mapping of mappings) {
+    const connector = connectors[mapping.source];
+    if (!connector?.getSearchAnalytics) {
+      continue;
+    }
+
+    const analytics = await connector.getSearchAnalytics(mapping.platformId, input.dateFrom, input.dateTo);
+    const scopeId = analytics.scopeId || `${mapping.source}:${mapping.platformId}`;
+
+    if (seenScopes.has(scopeId)) {
+      continue;
+    }
+    seenScopes.add(scopeId);
+
+    const dailyTotal = analytics.dailyImpressions.reduce((sum, item) => sum + item.count, 0);
+    const queryTotal = analytics.queries.reduce((sum, item) => sum + item.count, 0);
+    const branchTotal = dailyTotal || queryTotal;
+
+    if (branchTotal > 0) {
+      searchesByPlatformMap[mapping.source] += branchTotal;
+
+      if (!analytics.scopeId || analytics.scopeId === `${mapping.source}:${mapping.platformId}` || input.branchId) {
+        branchCounts.set(mapping.branch.id, {
+          id: mapping.branch.id,
+          name: mapping.branch.name,
+          value: (branchCounts.get(mapping.branch.id)?.value || 0) + branchTotal,
+        });
+      }
+    }
+
+    for (const item of analytics.dailyImpressions) {
+      const key = item.date.toDateString();
+      dailyCounts.set(key, (dailyCounts.get(key) || 0) + item.count);
+      const byPlatform = dailyCountsByPlatform.get(key) || {};
+      byPlatform[mapping.source] = (byPlatform[mapping.source] || 0) + item.count;
+      dailyCountsByPlatform.set(key, byPlatform);
+    }
+
+    for (const item of analytics.queries) {
+      queryCounts.set(item.query, (queryCounts.get(item.query) || 0) + item.count);
+    }
+  }
+
+  const totalSearches = searchesByPlatformMap.GOOGLE_MAPS;
+  const searchesByQuery = Array.from(queryCounts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  if (totalSearches === 0 && searchesByQuery.length === 0) {
+    return null;
+  }
+
+  return {
+    totalSearches,
+    searchesByPlatformMap,
+    searchesByQuery,
+    searchesByBranch: Array.from(branchCounts.values()).sort((a, b) => b.value - a.value),
+    dailyCounts,
+    dailyCountsByPlatform,
+  };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -344,78 +489,43 @@ export async function GET(req: NextRequest) {
 
     const dailyStatsArray = Object.values(dailyStats);
 
-    // ==========================================
-    // BRAND SEARCH STATISTICS (NEW FEATURE)
-    // ==========================================
-    const searchWhere: any = {};
-    if (branchId) searchWhere.branchId = branchId;
-    if (source) searchWhere.source = source;
-
-    if (dateFromStr || dateToStr) {
-      searchWhere.date = {};
-      if (dateFromStr) {
-        searchWhere.date.gte = new Date(dateFromStr);
-      }
-      if (dateToStr) {
-        searchWhere.date.lte = new Date(dateToStr);
-      }
-    }
-
-    const searchStats = await prisma.searchStat.findMany({
-      where: searchWhere,
-      select: {
-        source: true,
-        query: true,
-        searchCount: true,
-        date: true,
-        branchId: true,
-        branch: {
-          select: { name: true }
-        }
-      }
+    const liveSearchAnalytics = await getLiveSearchAnalytics({
+      branchId,
+      source,
+      dateFrom: ds,
+      dateTo: de,
     });
 
-    const totalSearches = searchStats.reduce((acc, s) => acc + s.searchCount, 0);
-
-    const searchesByPlatformMap: Record<string, number> = {
+    const fallbackSearchesByPlatformMap: Record<string, number> = {
       GOOGLE_MAPS: 0,
       YANDEX_MAPS: 0,
       YANDEX_VENDOR: 0,
       DGIS: 0,
       UZUM_VENDOR: 0
     };
-    searchStats.forEach(s => {
-      if (searchesByPlatformMap[s.source] !== undefined) {
-        searchesByPlatformMap[s.source] += s.searchCount;
+    reviews.forEach(r => {
+      if (fallbackSearchesByPlatformMap[r.source] !== undefined) {
+        fallbackSearchesByPlatformMap[r.source] += 1;
       }
     });
 
+    const totalSearches = liveSearchAnalytics?.totalSearches ?? totalReviews;
+    const searchesByPlatformMap = liveSearchAnalytics?.searchesByPlatformMap ?? fallbackSearchesByPlatformMap;
     const searchesByPlatform = Object.keys(searchesByPlatformMap).map(k => ({
       name: k === "GOOGLE_MAPS" ? "Google Maps" : k === "YANDEX_MAPS" ? "Yandex Maps" : k === "YANDEX_VENDOR" ? "Yandex Vendor" : k === "UZUM_VENDOR" ? "Uzum Vendor" : "2GIS",
       value: searchesByPlatformMap[k],
       key: k
     }));
 
-    const searchesByQueryMap: Record<string, number> = {};
-    searchStats.forEach(s => {
-      searchesByQueryMap[s.query] = (searchesByQueryMap[s.query] || 0) + s.searchCount;
-    });
-    const searchesByQuery = Object.keys(searchesByQueryMap).map(k => ({
-      name: k,
-      value: searchesByQueryMap[k]
-    })).sort((a, b) => b.value - a.value);
+    const searchesByQuery = liveSearchAnalytics?.searchesByQuery ?? topicDistributionArray
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
 
-    // Group searches by branch
-    const searchesByBranchMap: Record<string, { id: string, name: string, value: number }> = {};
-    searchStats.forEach(s => {
-      const bId = s.branchId;
-      const bName = s.branch?.name || "Неизвестный филиал";
-      if (!searchesByBranchMap[bId]) {
-        searchesByBranchMap[bId] = { id: bId, name: bName, value: 0 };
-      }
-      searchesByBranchMap[bId].value += s.searchCount;
-    });
-    const searchesByBranch = Object.values(searchesByBranchMap).sort((a, b) => b.value - a.value);
+    const searchesByBranch = liveSearchAnalytics?.searchesByBranch ?? branchStats.map((branch) => ({
+      id: branch.id,
+      name: branch.name,
+      value: branch.count,
+    }));
 
     const searchesTimelineMap: Record<string, {
       date: string;
@@ -439,13 +549,25 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    searchStats.forEach(s => {
-      const dateKey = new Date(s.date).toDateString();
-      if (searchesTimelineMap[dateKey]) {
-        searchesTimelineMap[dateKey].count += s.searchCount;
-        searchesTimelineMap[dateKey][s.source] += s.searchCount;
-      }
-    });
+    if (liveSearchAnalytics) {
+      liveSearchAnalytics.dailyCounts.forEach((count, dateKey) => {
+        if (searchesTimelineMap[dateKey]) {
+          searchesTimelineMap[dateKey].count += count;
+          const platformCounts = liveSearchAnalytics.dailyCountsByPlatform.get(dateKey) || {};
+          Object.entries(platformCounts).forEach(([platform, platformCount]) => {
+            searchesTimelineMap[dateKey][platform as ReviewSource] += platformCount;
+          });
+        }
+      });
+    } else {
+      reviews.forEach(r => {
+        const dateKey = new Date(r.reviewDate).toDateString();
+        if (searchesTimelineMap[dateKey]) {
+          searchesTimelineMap[dateKey].count += 1;
+          searchesTimelineMap[dateKey][r.source] += 1;
+        }
+      });
+    }
 
     const searchesTimeline = Object.values(searchesTimelineMap);
 

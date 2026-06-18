@@ -23,6 +23,18 @@ export interface ConnectorBranch {
   longitude?: number;
 }
 
+export interface BusinessSearchAnalytics {
+  scopeId?: string;
+  dailyImpressions: Array<{
+    date: Date;
+    count: number;
+  }>;
+  queries: Array<{
+    query: string;
+    count: number;
+  }>;
+}
+
 export interface IReviewConnector {
   readonly isMock: boolean;
 
@@ -46,6 +58,16 @@ export interface IReviewConnector {
    * Oxirgi sinxronizatsiyadan keyin kelgan faqat yangi sharhlarni yuklash.
    */
   getNewReviews(branchPlatformId: string, sinceDate: Date): Promise<NormalizedReview[]>;
+
+  /**
+   * Real business-account search/performance metrics when the platform exposes them.
+   * Implementations should return an empty result when credentials or API support are unavailable.
+   */
+  getSearchAnalytics?(
+    branchPlatformId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<BusinessSearchAnalytics>;
 
   /**
    * Platforma xaritasida sharhga javob yuborish.

@@ -22,7 +22,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-interface SearchStatsData {
+interface AggregatorActivityData {
   summary: {
     totalSearches: number;
   };
@@ -43,7 +43,7 @@ interface SearchStatsData {
 }
 
 export default function SearchAnalyticsPage() {
-  const [data, setData] = useState<SearchStatsData | null>(null);
+  const [data, setData] = useState<AggregatorActivityData | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -201,7 +201,7 @@ export default function SearchAnalyticsPage() {
               <Search className="h-6 w-6 text-violet-400" />
               <span>Аналитика поисковых запросов</span>
             </h2>
-            <p className="text-slate-400 text-sm">Данные о популярности бренда "Mazzali" в поисковых системах карт и агрегаторах</p>
+            <p className="text-slate-400 text-sm">Данные о популярности бренда &quot;Mazzali&quot; в поисковых системах карт и агрегаторах</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">

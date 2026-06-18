@@ -280,6 +280,7 @@ export class TwoGISAutomation extends BaseBusinessAutomation {
     const { chromium } = await import('playwright');
     const headless = (process.env.PLAYWRIGHT_HEADLESS ?? 'false') === 'true';
     const browser = await chromium.launch({ headless });
+    this.trackBrowser(browser);
 
     try {
       const context = await this.createContext(browser);
@@ -338,6 +339,7 @@ export class TwoGISAutomation extends BaseBusinessAutomation {
         console.log(`[${this.providerName}] Keeping browser open after verification resume pause.`);
       } else {
         await browser.close();
+        this.untrackBrowser(browser);
       }
     }
   }

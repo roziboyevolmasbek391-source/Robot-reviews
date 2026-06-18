@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AutomationProvider, AutomationStatus } from '@prisma/client';
 import { db } from '@/lib/db';
 import { requireSession } from '@/lib/security/session';
-import { YandexBusinessAutomation } from '@/features/automations/services/yandex-business-automation';
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -75,6 +74,9 @@ export async function POST(request: NextRequest, props: Params) {
 
     switch (verificationRequest.provider) {
       case AutomationProvider.YANDEX_BUSINESS: {
+        const { YandexBusinessAutomation } = await import(
+          '@/features/automations/services/yandex-business-automation'
+        );
         const yandex = new YandexBusinessAutomation();
         // This will re-open the browser, enter the code, and complete
         void yandex.resumeAfterVerification(automationRun.id, code);

@@ -1,13 +1,29 @@
 import Queue from "bull";
 import { createClient } from "redis";
 
-const redisUrl = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+const isBuild = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build";
+const redisUrl = isBuild ? "" : process.env.REDIS_URL || (process.env.NODE_ENV === "development" ? "redis://127.0.0.1:6379" : "");
+
+function createQueue(name: string) {
+  if (redisUrl) {
+    return new Queue(name, redisUrl);
+  }
+
+  return {
+    add: async () => {
+      throw new Error("REDIS_URL is not configured");
+    },
+    process: () => undefined,
+    on: () => undefined,
+    close: async () => undefined,
+  } as unknown as Queue.Queue;
+}
 
 /**
  * Redis Client
  */
 export const redisClient = createClient({
-  url: redisUrl,
+  url: redisUrl || "redis://127.0.0.1:6379",
 });
 
 redisClient.on("error", (err) => {
@@ -18,6 +34,10 @@ redisClient.on("error", (err) => {
  * Safe connect (prevents "client is closed")
  */
 export async function initRedis() {
+  if (!redisUrl) {
+    throw new Error("REDIS_URL is not configured");
+  }
+
   if (!redisClient.isOpen) {
     await redisClient.connect();
   }
@@ -26,10 +46,10 @@ export async function initRedis() {
 /**
  * Bull Queues (use same Redis URL)
  */
-export const publishQueue = new Queue("publish", redisUrl);
-export const validationQueue = new Queue("validation", redisUrl);
-export const verificationQueue = new Queue("verification", redisUrl);
-export const reconnectQueue = new Queue("reconnect", redisUrl);
+export const publishQueue = createQueue("publish");
+export const validationQueue = createQueue("validation");
+export const verificationQueue = createQueue("verification");
+export const reconnectQueue = createQueue("reconnect");
 
 /**
  * Queue error handlers

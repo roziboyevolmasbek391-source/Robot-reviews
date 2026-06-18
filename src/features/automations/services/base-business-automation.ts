@@ -7,6 +7,44 @@ import { createAutomationLog } from '@/features/logs/log-service';
 import { createNotification } from '@/features/notifications/notification-service';
 import type { AutomationContext } from './types';
 
+const openAutomationBrowsers = new Set<Browser>();
+let cleanupHandlersInstalled = false;
+
+function registerAutomationBrowser(browser: Browser) {
+  openAutomationBrowsers.add(browser);
+  installCleanupHandlers();
+}
+
+function unregisterAutomationBrowser(browser: Browser) {
+  openAutomationBrowsers.delete(browser);
+}
+
+function installCleanupHandlers() {
+  if (cleanupHandlersInstalled) return;
+  cleanupHandlersInstalled = true;
+
+  const closeOpenBrowsers = async () => {
+    const browsers = Array.from(openAutomationBrowsers);
+    openAutomationBrowsers.clear();
+
+    await Promise.allSettled(
+      browsers.map((browser) => browser.close().catch(() => undefined)),
+    );
+  };
+
+  process.once('beforeExit', () => {
+    void closeOpenBrowsers();
+  });
+
+  process.once('SIGINT', () => {
+    void closeOpenBrowsers().finally(() => process.exit(130));
+  });
+
+  process.once('SIGTERM', () => {
+    void closeOpenBrowsers().finally(() => process.exit(143));
+  });
+}
+
 /**
  * Base class for all provider-specific browser automations.
  *
@@ -36,6 +74,7 @@ export abstract class BaseBusinessAutomation {
         headless,
         channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || undefined,
       });
+      registerAutomationBrowser(browser);
 
       const browserContext = await this.createContext(browser);
       const page = await browserContext.newPage();
@@ -61,6 +100,9 @@ export abstract class BaseBusinessAutomation {
         console.log(`[${this.providerName}] Keeping browser window open for user manual confirmation/interaction.`);
       } else {
         await browser?.close();
+        if (browser) {
+          unregisterAutomationBrowser(browser);
+        }
       }
     }
   }
@@ -132,6 +174,14 @@ export abstract class BaseBusinessAutomation {
   };
 
   protected abstract applyWorkingHours(page: Page, workingHours: unknown): Promise<void>;
+
+  protected trackBrowser(browser: Browser) {
+    registerAutomationBrowser(browser);
+  }
+
+  protected untrackBrowser(browser: Browser) {
+    unregisterAutomationBrowser(browser);
+  }
 
   // ──────────────────── Retry helper ────────────────────────────────
 

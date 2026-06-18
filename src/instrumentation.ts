@@ -1,6 +1,11 @@
 export async function register() {
   // Biz Next.js instrumentation yordamida faqat server muhitida cronni boshlaymiz
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    if (process.env.ENABLE_AUTO_SYNC !== "true") {
+      console.log("[Instrumentation] Auto sync cron disabled. Set ENABLE_AUTO_SYNC=true to enable it.");
+      return;
+    }
+
     console.log("[Instrumentation] Server ishga tushdi, cron joblar sozlanmoqda...");
     const { initSyncJob } = await import("./features/sync/jobs/sync.job");
     // Bir marta ishga tushgandan so'ng xatolikka yo'l qo'ymaslik uchun try-catch'ga olamiz

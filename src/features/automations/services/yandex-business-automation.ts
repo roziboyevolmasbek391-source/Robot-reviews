@@ -299,6 +299,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
     const { chromium } = await import('playwright');
     const headless = (process.env.PLAYWRIGHT_HEADLESS ?? 'false') === 'true';
     const browser = await chromium.launch({ headless });
+    this.trackBrowser(browser);
 
     try {
       const context = await this.createContext(browser);
@@ -361,6 +362,7 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
         console.log(`[${this.providerName}] Keeping browser open after verification resume pause.`);
       } else {
         await browser.close();
+        this.untrackBrowser(browser);
       }
     }
   }
@@ -592,8 +594,8 @@ export class YandexBusinessAutomation extends BaseBusinessAutomation {
     if (!photosToUpload || photosToUpload.length === 0) {
       // Look for fallback images — ESM-safe using `existsSync` from `fs`
       const fallbacks = [
-        path.resolve('public/placeholder-business.jpg'),
-        path.resolve('public/images/default-storefront.jpg'),
+        'public/placeholder-business.jpg',
+        'public/images/default-storefront.jpg',
       ];
 
       for (const f of fallbacks) {

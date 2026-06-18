@@ -876,7 +876,7 @@ export default function MapsReviewsCenter() {
                       <span>Ответил: <b className="text-white">@{selectedReview.repliedBy}</b></span>
                       <span>SLA ответа: <b className="text-violet-400">{selectedReview.repliedAt ? formatSLADuration(selectedReview.reviewDate, selectedReview.repliedAt) : "неизвестно"}</b></span>
                     </div>
-                    <p className="text-slate-300 italic text-xs leading-relaxed">"{selectedReview.replyText}"</p>
+                    <p className="text-slate-300 italic text-xs leading-relaxed">&quot;{selectedReview.replyText}&quot;</p>
                   </div>
                 ) : stepDb === "idle" ? (
                   /* Javob yozish formasi */

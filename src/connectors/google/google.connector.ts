@@ -1,5 +1,5 @@
 import { ReviewSource } from "@prisma/client";
-import { ConnectorBranch, IReviewConnector, NormalizedReview } from "../base.connector";
+import { BusinessSearchAnalytics, ConnectorBranch, IReviewConnector, NormalizedReview } from "../base.connector";
 import * as crypto from "crypto";
 
 const shortMonths: Record<string, number> = {
@@ -162,93 +162,152 @@ export class GoogleReviewsConnector implements IReviewConnector {
     }
     
     try {
-      // GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts/-/locations
-      const res = await fetch("https://mybusinessbusinessinformation.googleapis.com/v1/accounts/-/locations", {
+      const accountsRes = await fetch("https://mybusinessaccountmanagement.googleapis.com/v1/accounts", {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
           Accept: "application/json"
         }
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.locations) {
-          return data.locations.map((loc: any) => ({
-            externalId: loc.name, // e.g. accounts/123/locations/456
-            name: loc.title || "Google Branch",
-            city: loc.address?.locality || "",
-            address: loc.address?.addressLines?.join(", ") || "",
-          }));
-        }
+
+      if (!accountsRes.ok) {
+        const body = await accountsRes.text().catch(() => "");
+        console.warn(`[Google Connector] Failed to fetch accounts: HTTP ${accountsRes.status} ${body}`);
+        return [];
       }
+
+      const accountsData = await accountsRes.json();
+      const accounts = Array.isArray(accountsData.accounts) ? accountsData.accounts : [];
+      const branches: ConnectorBranch[] = [];
+
+      for (const account of accounts) {
+        if (!account?.name) continue;
+
+        const params = new URLSearchParams({
+          readMask: "name,title,storeCode,storefrontAddress,metadata",
+          pageSize: "100",
+        });
+        let pageToken = "";
+
+        do {
+          if (pageToken) {
+            params.set("pageToken", pageToken);
+          }
+
+          const locationsRes = await fetch(
+            `https://mybusinessbusinessinformation.googleapis.com/v1/${account.name}/locations?${params.toString()}`,
+            {
+              headers: {
+                Authorization: `Bearer ${this.accessToken}`,
+                Accept: "application/json"
+              }
+            }
+          );
+
+          if (!locationsRes.ok) {
+            const body = await locationsRes.text().catch(() => "");
+            console.warn(`[Google Connector] Failed to fetch locations for ${account.name}: HTTP ${locationsRes.status} ${body}`);
+            break;
+          }
+
+          const locationsData = await locationsRes.json();
+          for (const loc of locationsData.locations || []) {
+            const locName = String(loc.name || "");
+            const externalId = locName.startsWith("accounts/")
+              ? locName
+              : `${account.name}/${locName}`;
+            const address = loc.storefrontAddress;
+            branches.push({
+              externalId,
+              name: loc.title || loc.storeCode || "Google Branch",
+              city: address?.locality || address?.administrativeArea || "",
+              address: Array.isArray(address?.addressLines) ? address.addressLines.join(", ") : "",
+            });
+          }
+
+          pageToken = locationsData.nextPageToken || "";
+        } while (pageToken);
+      }
+
+      return branches;
     } catch (e: any) {
       console.error("[Google Connector] Failed to fetch branches:", e.message);
     }
     return [];
   }
 
-  async getReviews(branchPlatformId: string, limit: number = 20): Promise<NormalizedReview[]> {
-    // 1. If OAuth is configured, fetch via Google Business API
-    if (this.accessToken) {
-      let url = "";
-      if (branchPlatformId.startsWith("accounts/")) {
-        url = `https://mybusiness.googleapis.com/v4/${branchPlatformId}/reviews?pageSize=${limit}`;
-      } else {
-        url = `https://mybusiness.googleapis.com/v4/accounts/-/locations/${branchPlatformId}/reviews?pageSize=${limit}`;
-      }
-
-      try {
-        console.log(`[Google Connector] Querying Google Business API: ${url}`);
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            Accept: "application/json"
-          }
-        });
-
-        if (!res.ok) {
-          console.warn(`[Google Connector] API request failed with status ${res.status}. Returning empty.`);
-          return [];
-        }
-
-        const data = await res.json();
-        if (!data || !data.reviews || !Array.isArray(data.reviews)) {
-          console.warn("[Google Connector] Invalid or empty reviews structure returned from API. Returning empty.");
-          return [];
-        }
-
-        console.log(`[Google Connector] Successfully fetched ${data.reviews.length} reviews from API.`);
-        
-        const ratingMap: Record<string, number> = {
-          "ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5
-        };
-
-        return data.reviews.map((r: any) => {
-          const rating = ratingMap[r.starRating] || 5;
-          const reviewDate = new Date(r.createTime || Date.now());
-          const author = r.reviewer?.displayName || "Anonim";
-          const text = r.comment || "";
-          
-          return {
-            source: ReviewSource.GOOGLE_MAPS,
-            branchId: "",
-            externalReviewId: r.reviewId || crypto.createHash("md5").update(`${author}_${reviewDate.getTime()}`).digest("hex"),
-            author,
-            rating,
-            text: text || null,
-            reviewUrl: r.reviewUrl || `https://maps.google.com/review?id=${branchPlatformId}`,
-            reviewDate,
-            replyText: r.reviewReply?.comment || null,
-            repliedAt: r.reviewReply?.updateTime ? new Date(r.reviewReply.updateTime) : null
-          };
-        });
-
-      } catch (err: any) {
-        console.error(`[Google Connector] Fetch error: ${err.message}. Returning empty.`);
-        return [];
-      }
+  private async getReviewsFromApi(branchPlatformId: string, limit: number): Promise<NormalizedReview[] | null> {
+    if (!this.accessToken) {
+      return null;
     }
 
-    // 2. If OAuth is NOT configured, run browser automation fallback
+    let url = "";
+    if (branchPlatformId.startsWith("accounts/")) {
+      url = `https://mybusiness.googleapis.com/v4/${branchPlatformId}/reviews?pageSize=${limit}`;
+    } else {
+      url = `https://mybusiness.googleapis.com/v4/accounts/-/locations/${branchPlatformId}/reviews?pageSize=${limit}`;
+    }
+
+    try {
+      console.log(`[Google Connector] Querying Google Business API: ${url}`);
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          Accept: "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.warn(`[Google Connector] API request failed with status ${res.status}. Falling back to browser session. ${body}`);
+        return null;
+      }
+
+      const data = await res.json();
+      if (!data || !data.reviews || !Array.isArray(data.reviews)) {
+        console.warn("[Google Connector] Invalid or empty reviews structure returned from API. Falling back to browser session.");
+        return null;
+      }
+
+      console.log(`[Google Connector] Successfully fetched ${data.reviews.length} reviews from API.`);
+      
+      const ratingMap: Record<string, number> = {
+        "ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5
+      };
+
+      return data.reviews.map((r: any) => {
+        const rating = ratingMap[r.starRating] || 5;
+        const reviewDate = new Date(r.createTime || Date.now());
+        const author = r.reviewer?.displayName || "Anonim";
+        const text = r.comment || "";
+        
+        return {
+          source: ReviewSource.GOOGLE_MAPS,
+          branchId: "",
+          externalReviewId: r.reviewId || crypto.createHash("md5").update(`${author}_${reviewDate.getTime()}`).digest("hex"),
+          externalPlaceId: branchPlatformId,
+          author,
+          rating,
+          text: text || null,
+          reviewUrl: r.reviewUrl || `https://maps.google.com/review?id=${branchPlatformId}`,
+          reviewDate,
+          replyText: r.reviewReply?.comment || null,
+          repliedAt: r.reviewReply?.updateTime ? new Date(r.reviewReply.updateTime) : null
+        };
+      });
+
+    } catch (err: any) {
+      console.error(`[Google Connector] Fetch error: ${err.message}. Falling back to browser session.`);
+      return null;
+    }
+  }
+
+  async getReviews(branchPlatformId: string, limit: number = 20): Promise<NormalizedReview[]> {
+    const apiReviews = await this.getReviewsFromApi(branchPlatformId, limit);
+    if (apiReviews) {
+      return apiReviews;
+    }
+
+    // If OAuth is not configured or the API is unavailable, run browser automation fallback.
     console.log(`[Google Connector] Fetching reviews using Playwright for branch platform ID: ${branchPlatformId}`);
     
     // Check Cache
@@ -384,7 +443,7 @@ export class GoogleReviewsConnector implements IReviewConnector {
           try {
             await nextBtn.click({ timeout: 5000 });
             await page.waitForTimeout(4000);
-          } catch (clickErr) {
+          } catch {
             console.log('[Google Connector] Could not click Next Page. Stopping pagination.');
             break;
           }
@@ -419,6 +478,219 @@ export class GoogleReviewsConnector implements IReviewConnector {
   async getNewReviews(branchPlatformId: string, sinceDate: Date): Promise<NormalizedReview[]> {
     const allReviews = await this.getReviews(branchPlatformId, 10);
     return allReviews.filter(review => new Date(review.reviewDate) > sinceDate);
+  }
+
+  async getSearchAnalytics(
+    branchPlatformId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<BusinessSearchAnalytics> {
+    const empty: BusinessSearchAnalytics = { dailyImpressions: [], queries: [] };
+
+    if (!this.accessToken) {
+      const authenticated = await this.authenticate();
+      if (!authenticated || !this.accessToken) {
+        return empty;
+      }
+    }
+
+    const locationName = this.normalizePerformanceLocationName(branchPlatformId);
+    if (!locationName) {
+      console.warn(`[Google Connector] Cannot fetch performance metrics: invalid location ID "${branchPlatformId}"`);
+      return empty;
+    }
+
+    const dailyImpressions = await this.fetchDailyImpressions(locationName, dateFrom, dateTo);
+    const queries = await this.fetchMonthlySearchKeywords(locationName, dateFrom, dateTo);
+
+    return { dailyImpressions, queries };
+  }
+
+  private normalizePerformanceLocationName(branchPlatformId: string): string | null {
+    const trimmed = branchPlatformId.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.startsWith("locations/")) {
+      return trimmed;
+    }
+
+    const locationMatch = trimmed.match(/locations\/([^/]+)/);
+    if (locationMatch?.[1]) {
+      return `locations/${locationMatch[1]}`;
+    }
+
+    return `locations/${trimmed}`;
+  }
+
+  private appendDateParams(params: URLSearchParams, prefix: string, date: Date) {
+    params.set(`${prefix}.year`, String(date.getFullYear()));
+    params.set(`${prefix}.month`, String(date.getMonth() + 1));
+    params.set(`${prefix}.day`, String(date.getDate()));
+  }
+
+  private appendMonthParams(params: URLSearchParams, prefix: string, date: Date) {
+    params.set(`${prefix}.year`, String(date.getFullYear()));
+    params.set(`${prefix}.month`, String(date.getMonth() + 1));
+  }
+
+  private parseGoogleDate(raw: any): Date | null {
+    if (!raw) return null;
+    if (typeof raw === "string") {
+      const parsed = new Date(raw);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const year = Number(raw.year);
+    const month = Number(raw.month);
+    const day = Number(raw.day || 1);
+    if (!year || !month) return null;
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+
+  private getDatedValueDate(point: any): Date | null {
+    return this.parseGoogleDate(point.date || point.day || point.month || point.startDate);
+  }
+
+  private getDatedValueCount(point: any): number {
+    const rawValue = point.value ?? point.metricValue?.value ?? point.insightsValue?.value ?? 0;
+    const value = Number(rawValue);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  private collectTimeSeriesPoints(node: any): Array<{ date: Date; count: number }> {
+    const points: Array<{ date: Date; count: number }> = [];
+
+    const visit = (value: any) => {
+      if (!value || typeof value !== "object") return;
+
+      if (
+        (value.date || value.day || value.month || value.startDate) &&
+        (value.value !== undefined || value.metricValue || value.insightsValue)
+      ) {
+        const date = this.getDatedValueDate(value);
+        const count = this.getDatedValueCount(value);
+        if (date && count > 0) {
+          points.push({ date, count });
+        }
+      }
+
+      for (const child of Object.values(value)) {
+        if (Array.isArray(child)) {
+          child.forEach(visit);
+        } else if (child && typeof child === "object") {
+          visit(child);
+        }
+      }
+    };
+
+    visit(node);
+    return points;
+  }
+
+  private async fetchDailyImpressions(
+    locationName: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<Array<{ date: Date; count: number }>> {
+    const metrics = [
+      "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
+      "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
+      "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+      "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
+    ];
+    const params = new URLSearchParams();
+    metrics.forEach((metric) => params.append("dailyMetrics", metric));
+    this.appendDateParams(params, "dailyRange.start_date", dateFrom);
+    this.appendDateParams(params, "dailyRange.end_date", dateTo);
+
+    const url = `https://businessprofileperformance.googleapis.com/v1/${locationName}:fetchMultiDailyMetricsTimeSeries?${params.toString()}`;
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.warn(`[Google Connector] Performance API failed: HTTP ${res.status} ${body}`);
+        return [];
+      }
+
+      const data = await res.json();
+      const byDate = new Map<string, { date: Date; count: number }>();
+      for (const point of this.collectTimeSeriesPoints(data)) {
+        const key = point.date.toISOString().slice(0, 10);
+        const existing = byDate.get(key);
+        if (existing) {
+          existing.count += point.count;
+        } else {
+          byDate.set(key, { date: point.date, count: point.count });
+        }
+      }
+
+      return Array.from(byDate.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+    } catch (error: any) {
+      console.error(`[Google Connector] Performance metrics fetch error: ${error.message}`);
+      return [];
+    }
+  }
+
+  private async fetchMonthlySearchKeywords(
+    locationName: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<Array<{ query: string; count: number }>> {
+    const params = new URLSearchParams();
+    this.appendMonthParams(params, "monthlyRange.start_month", dateFrom);
+    this.appendMonthParams(params, "monthlyRange.end_month", dateTo);
+    params.set("pageSize", "100");
+
+    const queryCounts = new Map<string, number>();
+    let pageToken = "";
+
+    try {
+      do {
+        if (pageToken) {
+          params.set("pageToken", pageToken);
+        }
+
+        const url = `https://businessprofileperformance.googleapis.com/v1/${locationName}/searchkeywords/impressions/monthly?${params.toString()}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            Accept: "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          console.warn(`[Google Connector] Search keywords API failed: HTTP ${res.status} ${body}`);
+          return [];
+        }
+
+        const data = await res.json();
+        for (const item of data.searchKeywordsCounts || []) {
+          const query = String(item.searchKeyword || "").trim();
+          const rawCount = item.insightsValue?.value ?? item.insightsValue?.threshold ?? 0;
+          const count = Number(rawCount);
+          if (query && Number.isFinite(count) && count > 0) {
+            queryCounts.set(query, (queryCounts.get(query) || 0) + count);
+          }
+        }
+
+        pageToken = data.nextPageToken || "";
+      } while (pageToken);
+
+      return Array.from(queryCounts.entries())
+        .map(([query, count]) => ({ query, count }))
+        .sort((a, b) => b.count - a.count);
+    } catch (error: any) {
+      console.error(`[Google Connector] Search keywords fetch error: ${error.message}`);
+      return [];
+    }
   }
 
   private getMockFallbackReviews(branchPlatformId: string, limit: number): NormalizedReview[] {
@@ -598,7 +870,7 @@ export class GoogleReviewsConnector implements IReviewConnector {
           console.log(`[Google Connector] Author not found on page ${pageNum}. Navigating to next page...`);
           try {
             await nextBtn.click({ timeout: 5000 });
-          } catch (e) {
+          } catch {
             console.log('[Google Connector] Could not click next page button.');
             break;
           }
